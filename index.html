@@ -13,10 +13,27 @@
         .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
+
+        /* 配信一覧カードの調整 */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
-        .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
-        .tweet-iframe { width: 100%; height: 500px; border: none; }
+        
+        /* ポストの文字サイズを擬似的に小さく表示するための調整 */
+        .tweet-wrapper { 
+            height: 380px; 
+            overflow-y: auto; 
+            background: #fff; 
+            display: flex;
+            justify-content: center;
+            padding: 5px;
+        }
+        .tweet-iframe { 
+            width: 100%; 
+            min-height: 500px; 
+            border: none; 
+            transform: scale(0.92); /* 全体を少し縮小して枠内に収める */
+            transform-origin: top center;
+        }
         
         .timeline-btn { 
             display: inline-flex; align-items: center; gap: 8px;
@@ -33,8 +50,9 @@
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
         
-        /* フォーム入力欄の微調整 */
-        input, select { font-size: 14px !important; height: 40px; }
+        /* フォーム入力欄のサイズ調整 */
+        input, select { font-size: 14px !important; height: 42px; transition: 0.2s; }
+        input:focus, select:focus { border-color: #ffb7c5; background-color: #fffafb; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -48,22 +66,29 @@
             </div>
         </header>
 
-        <section class="glass-morphism p-4 rounded-3xl mb-10 shadow-md">
-            <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                <input type="text" id="vtuberName" placeholder="配信者名" class="p-2 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
-                <div class="flex gap-1 items-center">
-                    <select id="month" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
-                    <select id="day" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
+        <section class="glass-morphism p-5 rounded-3xl mb-10 shadow-md">
+            <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <input type="text" id="vtuberName" placeholder="配信者名" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                
+                <div class="flex gap-2 items-center">
+                    <div class="flex flex-1">
+                        <select id="month" class="p-2 rounded-l-xl border-y-2 border-l-2 border-[#ffdeeb] bg-white w-full"></select>
+                        <select id="day" class="p-2 rounded-r-xl border-2 border-[#ffdeeb] bg-white w-full"></select>
+                    </div>
                 </div>
-                <input type="time" id="startTime" class="p-2 rounded-xl border-2 border-[#ffdeeb]" required>
-                <select id="genre" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white">
+
+                <input type="time" id="startTime" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] bg-white" required>
+                
+                <select id="genre" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] bg-white">
                     <option value="雑談">💬 雑談</option>
                     <option value="ゲーム">🎮 ゲーム</option>
                     <option value="歌枠">🎤 歌枠</option>
                     <option value="その他">💡 その他</option>
                 </select>
-                <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 rounded-xl border-2 border-[#ffdeeb] col-span-2" required>
-                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md">登録！</button>
+                
+                <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] col-span-2 outline-none" required>
+                
+                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md active:scale-95 transition-transform">登録！</button>
             </form>
         </section>
 
@@ -118,24 +143,13 @@
         function parseClean(item) {
             const sDate = String(item.date || "");
             const sTime = String(item.time || "");
-
-            // 日付: 文字列から数字を抜き出すのみ
             let y = "2026", m = "01", d = "15";
             const dm = sDate.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
             if(dm) { [y, m, d] = [dm[1], dm[2].padStart(2,'0'), dm[3].padStart(2,'0')]; }
-
-            // 時刻: 文字列から数字を抜き出すのみ（計算なし）
             let hh = "00", mm = "00";
             const tm = sTime.match(/(\d{1,2}):(\d{1,2})/);
             if(tm) { [hh, mm] = [tm[1].padStart(2,'0'), tm[2].padStart(2,'0')]; }
-
-            return {
-                date: `${y}-${m}-${d}`,
-                time: `${hh}:${mm}`,
-                name: item.name || "不明",
-                genre: item.genre || "その他",
-                url: item.url || "#"
-            };
+            return { date: `${y}-${m}-${d}`, time: `${hh}:${mm}`, name: item.name || "不明", genre: item.genre || "その他", url: item.url || "#" };
         }
 
         async function fetchSchedules() {
