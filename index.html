@@ -13,20 +13,19 @@
         .nav-btn { cursor: pointer; padding: 10px 16px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.85rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-        /* iframeを中央寄せにするための設定 */
-        .tweet-container { width: 100%; display: flex; justify-content: center; min-height: 500px; background: #fff; border-radius: 15px; overflow: hidden; border: 1px solid #eee; }
-        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+        .tweet-wrapper { width: 100%; min-height: 500px; background: #fff; border-radius: 15px; overflow: hidden; border: 1px solid #ffdeeb; position: relative; }
+        .tweet-iframe { width: 100%; height: 600px; border: none; }
+        .timeline-chip { background-color: #fff; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body class="text-gray-700">
 
     <div class="max-w-5xl mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-[#ff85a2] drop-shadow-sm mb-4">🎀 VTuber総合番組表 🎀</h1>
+            <h1 class="text-4xl font-bold text-[#ff85a2] mb-4">🎀 VTuber総合番組表 🎀</h1>
             <div class="flex flex-wrap justify-center gap-2 mb-6">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">✨ 配信一覧</button>
                 <button id="tabCalendar" class="nav-btn" onclick="switchTab('calendar')">📅 タイムライン</button>
-                <button id="tabTest" class="nav-btn" style="border-color: #1da1f2; color: #1da1f2;" onclick="switchTab('test')">🔍 X表示テスト</button>
             </div>
             
             <div class="flex justify-center gap-2 overflow-x-auto pb-2">
@@ -61,23 +60,24 @@
         <section id="viewCalendar" class="hidden bg-white p-6 rounded-3xl shadow-lg border-2 border-[#ffdeeb]">
             <div id="calendarContainer" class="space-y-2"></div>
         </section>
-
-        <section id="viewTest" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-3xl border-2 border-blue-400 p-4">
-                <h2 class="font-bold text-blue-500 mb-4 text-center">X埋め込みテスト（iframe方式）</h2>
-                <div id="testArea" class="space-y-4">
-                    <div class="tweet-container">
-                        <iframe border=0 frameborder=0 height=550 width=500 src="https://twitframe.com/show?url=https://x.com/X/status/1683498144214831104"></iframe>
-                    </div>
-                </div>
-            </div>
-        </section>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
         let currentGenre = "すべて";
+
+        // XのURLを埋め込み用URLに変換する関数 (syndication方式)
+        function getEmbedUrl(url) {
+            try {
+                const tweetId = url.split('/status/')[1]?.split('?')[0];
+                if (!tweetId) return url;
+                // X公式の埋め込み用エンドポイントを使用
+                return `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=light`;
+            } catch (e) {
+                return url;
+            }
+        }
 
         window.onload = () => {
             document.getElementById('streamDate').value = new Date().toISOString().split('T')[0];
@@ -89,7 +89,10 @@
                 const res = await fetch(GAS_URL);
                 allSchedules = await res.json();
                 renderAll();
-            } catch (e) { console.error("Fetch Error:", e); }
+            } catch (e) { 
+                console.error("Fetch Error:", e);
+                document.getElementById('upcomingList').innerHTML = "データの取得に失敗しました。";
+            }
         }
 
         function renderAll() {
@@ -100,11 +103,12 @@
             listEl.innerHTML = '';
             calEl.innerHTML = '';
 
+            // タイムラインの枠を生成
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
-                row.className = 'flex border-b border-pink-50 min-h-[50px] items-start py-2';
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center">${i}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
+                row.className = 'flex border-b border-pink-50 min-h-[60px] items-start py-2';
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center pt-2">${i}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
                 calEl.appendChild(row);
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
@@ -116,17 +120,18 @@
                 const cleanTime = String(item.time).includes('T') ? String(item.time).split('T')[1].slice(0,5) : String(item.time).slice(0,5);
                 const cleanDate = String(item.date).split('T')[0];
 
-                // 配信一覧：iframe方式で表示
+                // 配信一覧：iframe直接埋め込み（サードパーティを介さない）
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col';
+                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col overflow-hidden';
+                const embedUrl = getEmbedUrl(item.url);
                 card.innerHTML = `
                     <div class="flex justify-between items-center mb-2 px-2">
                         <span class="text-lg font-bold text-[#ff85a2]">⏰ ${cleanDate.slice(5)} ${cleanTime}</span>
                         <span class="text-xs bg-pink-100 text-[#ff85a2] px-2 py-1 rounded-full">${item.genre}</span>
                     </div>
                     <p class="text-sm font-bold text-gray-400 mb-4 px-2">${item.name} さん</p>
-                    <div class="tweet-container">
-                        <iframe border=0 frameborder=0 height=500 width=100% src="https://twitframe.com/show?url=${encodeURIComponent(item.url)}"></iframe>
+                    <div class="tweet-wrapper">
+                        <iframe class="tweet-iframe" src="${embedUrl}"></iframe>
                     </div>
                 `;
                 listEl.appendChild(card);
@@ -145,10 +150,8 @@
         function switchTab(tab) {
             document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
-            document.getElementById('viewTest').classList.toggle('hidden', tab !== 'test');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
-            document.getElementById('tabTest').classList.toggle('active', tab === 'test');
         }
 
         function filterGenre(genre) {
@@ -167,9 +170,12 @@
                 genre: document.getElementById('genre').value,
                 url: document.getElementById('tweetUrl').value
             };
-            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
-            alert("登録しました！");
-            location.reload();
+            try {
+                await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
+                alert("登録しました！");
+                fetchSchedules(); // 再読み込み
+            } catch (e) { alert("エラーが発生しました"); }
+            finally { btn.disabled = false; }
         };
     </script>
 </body>
