@@ -18,15 +18,19 @@
         .filter-btn { padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; border: 1px solid #ffdeeb; background: white; cursor: pointer; transition: 0.2s; }
         .filter-btn.active { background: #ff85a2; color: white; border-color: #ff85a2; }
 
-        /* カードと埋め込み（いいねボタンが見えるように高さを調整） */
+        /* ポストカード共通 */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1.5rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         
-        /* 枠の高さを550pxに広げ、いいねボタンまで確実に表示 */
-        .tweet-wrapper { height: 550px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
-        .tweet-iframe { width: 100%; height: 650px; border: none; transform: scale(0.98); transform-origin: top center; }
+        /* 【配信一覧】通常スケール */
+        .tweet-wrapper { height: 500px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
+        .tweet-iframe { width: 100%; height: 600px; border: none; transform: scale(0.95); transform-origin: top center; }
+
+        /* 【おはV】縮小スケール（長文・引用対応） */
+        .ohv-wrapper { height: 650px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
+        .ohv-iframe { width: 100%; height: 850px; border: none; transform: scale(0.85); transform-origin: top center; }
         
-        /* タイムライン */
+        /* タイムラインボタン */
         .timeline-btn { display: inline-flex; align-items: center; gap: 6px; background: white; padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: bold; transition: 0.2s; cursor: pointer; box-shadow: 0 2px 5px rgba(255,183,197,0.1); margin: 2px; border: 2px solid; }
         .btn-chat { border-color: #ffb7c5; color: #ff85a2; }
         .btn-game { border-color: #a0e1ff; color: #40a9ff; }
@@ -72,7 +76,7 @@
         </section>
 
         <section id="formOhv" class="glass-morphism p-5 rounded-3xl mb-10 shadow-md hidden">
-            <div class="mb-2"><span class="form-label">☀️ おはようVTuber登録（URLを入れるだけ！）</span></div>
+            <div class="mb-2"><span class="form-label">☀️ おはようVTuber登録（URLのみでOK！）</span></div>
             <form id="ohvForm" class="flex flex-wrap gap-3">
                 <input type="text" id="ohvName" placeholder="お名前" class="flex-1 min-w-[150px] p-2 px-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
                 <select id="ohvGender" class="w-24 p-2 rounded-xl border-2 border-[#ffdeeb] bg-white"><option value="♀">♀ 女子</option><option value="♂">♂ 男子</option><option value="その他">❔ 他</option></select>
@@ -146,7 +150,6 @@
             let hh = "00", mm = "00";
             const tm = sTime.match(/(\d{1,2}):(\d{1,2})/);
             if(tm) { [hh, mm] = [tm[1].padStart(2,'0'), tm[2].padStart(2,'0')]; }
-            
             return { date: `${y}-${m}-${d}`, time: `${hh}:${mm}`, name: item.name || "不明", genre: item.genre || "その他", url: item.url || "#", gender: item.gender || "♀", type: item.type || "配信" };
         }
 
@@ -175,26 +178,28 @@
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
 
-            // 配信一覧用：時間順
             const streamItems = allSchedules.filter(i => i.type === "配信").sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
-            // おはV用：追加順（新しいのが上）を模して、日付＋時間の降順
             const ohvItems = allSchedules.filter(i => i.type === "おはV").sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
 
             const renderCard = (item) => {
                 if (currentGenderFilter !== "All" && item.gender !== currentGenderFilter) return null;
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
                 const gTag = `<span class="gender-tag ${item.gender==='♀'?'tag-female':item.gender==='♂'?'tag-male':'tag-other'}">${item.gender}</span>`;
+                const isOhv = item.type === 'おはV';
+                
                 return `
                     <div class="tweet-card">
                         <div class="card-header">
                             <div class="flex items-center gap-2">
-                                <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5).replace('-','/')} ${item.type==='おはV'?'投稿':item.time}</span>
+                                <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5).replace('-','/')} ${isOhv?'☀️':item.time}</span>
                                 ${gTag}
                                 <span class="text-gray-700 font-bold text-sm">| ${item.name}</span>
                             </div>
-                            ${item.type==='おはV'?'':`<span class="genre-tag">${item.genre}</span>`}
+                            ${isOhv?'':`<span class="genre-tag">${item.genre}</span>`}
                         </div>
-                        <div class="tweet-wrapper"><iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe></div>
+                        <div class="${isOhv?'ohv-wrapper':'tweet-wrapper'}">
+                            <iframe class="${isOhv?'ohv-iframe':'tweet-iframe'}" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe>
+                        </div>
                     </div>
                 `;
             };
@@ -230,15 +235,13 @@
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
             document.getElementById('tabOhv').classList.toggle('active', tab === 'ohv');
-            // フォームの切り替え
             document.getElementById('formStream').classList.toggle('hidden', tab === 'ohv');
             document.getElementById('formOhv').classList.toggle('hidden', tab !== 'ohv');
         }
 
-        // 共通送信処理
         async function submitData(data) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) });
-            alert("登録完了！盛り上げていきましょう！");
+            alert("登録完了！今日も一日頑張りましょう✨");
             fetchSchedules();
         }
 
@@ -267,7 +270,7 @@
                 gender: document.getElementById('ohvGender').value,
                 type: "おはV"
             });
-            document.getElementById('ohvUrl').value = ""; // URLだけ空にする
+            document.getElementById('ohvUrl').value = "";
         };
     </script>
 </body>
