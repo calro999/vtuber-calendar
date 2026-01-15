@@ -13,11 +13,24 @@
         .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
+
+        /* 配信一覧カード */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
-        .timeline-chip { background: white; border: 1px solid #ffb7c5; color: #ff85a2; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 6px rgba(255,183,197,0.1); }
+
+        /* タイムライン用ボタン（チップ） */
+        .timeline-btn { 
+            display: inline-flex; align-items: center; gap: 8px;
+            background: white; border: 2px solid #ffb7c5; color: #ff85a2; 
+            padding: 8px 16px; border-radius: 999px; font-size: 0.85rem; 
+            font-weight: bold; transition: 0.2s; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(255,183,197,0.1);
+        }
+        .timeline-btn:hover { background: #ffb7c5; color: white; transform: translateY(-2px); }
+        .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
+
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
     </style>
@@ -64,9 +77,8 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
-        let currentGenre = "すべて";
         
-        // 【重要】日本時間を取得する関数 (TimeZoneをAsia/Tokyoに固定)
+        // 日本時間を取得 (YYYY-MM-DD)
         function getJSTDate(offsetDays = 0) {
             const now = new Date();
             const jstNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
@@ -79,27 +91,23 @@
 
         let selectedTimelineDate = getJSTDate(0);
 
-        // 文字列から確実に YYYY-MM-DD を抽出する
-        function cleanDate(val) {
-            if (!val) return "";
-            const s = String(val);
-            // "2026-01-14T..." や "2026/01/14" などの形式を統一
-            const match = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            if (match) {
-                return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
-            }
-            return s.split('T')[0].split(' ')[0];
-        }
+        // データのゆらぎを吸収してクリーンアップする関数
+        function clean(item) {
+            const dStr = String(item.date || item.Date || "");
+            const tStr = String(item.time || item.Time || "");
+            const name = item.name || item.Name || "不明";
+            const genre = item.genre || item.Genre || "その他";
+            const url = item.url || item.Url || "#";
 
-        // 文字列から確実に HH:mm を抽出する
-        function cleanTime(val) {
-            if (!val) return "00:00";
-            const s = String(val);
-            const match = s.match(/(\d{1,2}):(\d{1,2})/);
-            if (match) {
-                return `${match[1].padStart(2, '0')}:${match[2].padStart(2, '0')}`;
-            }
-            return "00:00";
+            // 日付抽出 (YYYY-MM-DD)
+            const dMatch = dStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            const date = dMatch ? `${dMatch[1]}-${dMatch[2].padStart(2, '0')}-${dMatch[3].padStart(2, '0')}` : dStr.split('T')[0].split(' ')[0];
+
+            // 時刻抽出 (HH:mm)
+            const tMatch = tStr.match(/(\d{1,2}):(\d{1,2})/);
+            const time = tMatch ? `${tMatch[1].padStart(2, '0')}:${tMatch[2].padStart(2, '0')}` : "00:00";
+
+            return { date, time, name, genre, url };
         }
 
         window.onload = () => {
@@ -125,9 +133,11 @@
         async function fetchSchedules() {
             try {
                 const res = await fetch(GAS_URL);
-                allSchedules = await res.json();
+                const data = await res.json();
+                // 全てのデータを一度クリーンアップ
+                allSchedules = data.map(item => clean(item));
                 renderAll();
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Fetch Error:", e); }
         }
 
         function renderAll() {
@@ -135,29 +145,29 @@
             const calEl = document.getElementById('calendarContainer');
             listEl.innerHTML = ''; calEl.innerHTML = '';
 
+            // タイムライン枠
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
-                row.className = 'flex border-b border-pink-50 min-h-[50px] items-center';
+                row.className = 'flex border-b border-pink-50 min-h-[60px] items-center';
                 const hourLabel = String(i).padStart(2, '0');
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${hourLabel}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-4 py-1"></div>`;
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${hourLabel}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-3 px-4 py-2"></div>`;
                 calEl.appendChild(row);
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
 
-            allSchedules.sort((a, b) => (cleanDate(a.date) + cleanTime(a.time)).localeCompare(cleanDate(b.date) + cleanTime(b.time)));
+            // ソート
+            allSchedules.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
             allSchedules.forEach(item => {
-                const d = cleanDate(item.date);
-                const t = cleanTime(item.time);
+                // 配信一覧
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
-
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
                 card.innerHTML = `
                     <div class="card-header">
                         <div class="flex items-center gap-2">
-                            <span class="text-[#ff85a2] font-bold text-sm">⏰ ${d.slice(5)} ${t}</span>
+                            <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5)} ${item.time}</span>
                             <span class="text-gray-700 font-bold text-sm">| ${item.name}</span>
                         </div>
                         <span class="text-[10px] bg-pink-50 text-[#ff85a2] px-2 py-0.5 rounded-full border border-pink-100">${item.genre}</span>
@@ -168,10 +178,19 @@
                 `;
                 listEl.appendChild(card);
 
-                if (d === selectedTimelineDate) {
-                    const h = parseInt(t.split(':')[0]);
+                // タイムラインへの流し込み（厳密比較）
+                if (item.date === selectedTimelineDate) {
+                    const h = parseInt(item.time.split(':')[0]);
                     if (boxes[h]) {
-                        boxes[h].innerHTML += `<div class="timeline-chip">${t} | ${item.name}</div>`;
+                        const btn = document.createElement('button');
+                        btn.className = 'timeline-btn';
+                        btn.innerHTML = `
+                            <span class="text-xs font-normal text-gray-400">${item.time}</span>
+                            <span class="genre-tag">${item.genre}</span>
+                            <span>${item.name}</span>
+                        `;
+                        btn.onclick = () => window.open(item.url, '_blank');
+                        boxes[h].appendChild(btn);
                     }
                 }
             });
@@ -196,7 +215,7 @@
                 url: document.getElementById('tweetUrl').value
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
-            alert("登録しました！");
+            alert("登録依頼を送信しました！");
             e.target.reset();
             fetchSchedules();
             btn.disabled = false;
