@@ -14,13 +14,11 @@
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
 
-        /* 配信一覧カード */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
 
-        /* タイムラインボタン共通 */
         .timeline-btn { 
             display: inline-flex; align-items: center; gap: 8px;
             background: white; padding: 8px 16px; border-radius: 999px; 
@@ -29,11 +27,10 @@
         }
         .timeline-btn:hover { transform: translateY(-2px); filter: brightness(0.95); }
 
-        /* カテゴリ別カラー設定 */
-        .btn-chat { border-color: #ffb7c5; color: #ff85a2; } /* 雑談: ピンク */
-        .btn-game { border-color: #a0e1ff; color: #40a9ff; } /* ゲーム: 青 */
-        .btn-song { border-color: #c2ffb7; color: #4ecb3d; } /* 歌枠: 緑 */
-        .btn-etc  { border-color: #ffe0b7; color: #ff9f40; } /* その他: オレンジ */
+        .btn-chat { border-color: #ffb7c5; color: #ff85a2; }
+        .btn-game { border-color: #a0e1ff; color: #40a9ff; }
+        .btn-song { border-color: #c2ffb7; color: #4ecb3d; }
+        .btn-etc  { border-color: #ffe0b7; color: #ff9f40; }
 
         .genre-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,0.05); }
 
@@ -129,20 +126,33 @@
             const rawD = String(item.date || item.Date || "");
             const rawT = String(item.time || item.Time || "");
 
-            // 日付抽出
-            let y = "2026", m = "01", d = "15";
+            // 日付抽出：2026-01-16 などを探す
+            let y = "2026", m = "01", d = "01";
             const dateParts = rawD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
             if (dateParts) {
-                [y, m, d] = [dateParts[1], dateParts[2].padStart(2,'0'), dateParts[3].padStart(2,'0')];
+                y = dateParts[1];
+                m = dateParts[2].padStart(2,'0');
+                d = dateParts[3].padStart(2,'0');
+            } else {
+                // 文字列の中に Jan 16 2026 のような形式があるかチェック
+                const months = { Jan:"01", Feb:"02", Mar:"03", Apr:"04", May:"05", Jun:"06", Jul:"07", Aug:"08", Sep:"09", Oct:"10", Nov:"11", Dec:"12" };
+                const alt = rawD.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+                if (alt) {
+                    m = months[alt[1]] || "01";
+                    d = alt[2].padStart(2,'0');
+                    y = alt[3];
+                }
             }
 
-            // 【重要】時刻抽出：あらゆる変換を無視して「HH:mm」の形だけを抜き出す
+            // 時刻抽出：純粋に HH:mm 形式だけを文字列として抜き出す
             let hh = "00", mm = "00";
-            const timeOnly = rawT.match(/(\d{1,2}):(\d{1,2})/);
-            if (timeOnly) {
-                hh = timeOnly[1].padStart(2,'0');
-                mm = timeOnly[2].padStart(2,'0');
+            // まず「time」列をチェック
+            const timeMatch = rawT.match(/(\d{1,2}):(\d{1,2})/);
+            if (timeMatch) {
+                hh = timeMatch[1].padStart(2,'0');
+                mm = timeMatch[2].padStart(2,'0');
             } else {
+                // time列が壊れていたら「date」列に含まれる時刻を探す
                 const timeInDate = rawD.match(/(\d{1,2}):(\d{1,2})/);
                 if (timeInDate) {
                     hh = timeInDate[1].padStart(2,'0');
