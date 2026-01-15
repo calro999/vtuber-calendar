@@ -15,13 +15,14 @@
         .hidden { display: none; }
         
         /* 配信一覧カードのサイズ制限 */
-        .tweet-card { max-height: 550px; display: flex; flex-direction: column; overflow: hidden; }
-        .tweet-wrapper { flex: 1; overflow-y: auto; background: #fff; border-radius: 12px; border: 1px solid #f0f0f0; }
+        .tweet-card { max-height: 550px; display: flex; flex-direction: column; overflow: hidden; background: white; border-radius: 24px; box-shadow: 0 4px 15px rgba(255,183,197,0.2); }
+        .tweet-wrapper { flex: 1; overflow-y: auto; background: #fff; margin: 0 10px 10px 10px; border-radius: 12px; border: 1px solid #fff0f3; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
 
         /* タイムラインのデザイン */
-        .timeline-chip { background: white; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(255,183,197,0.2); transition: 0.2s; }
-        .date-selector-btn { padding: 6px 15px; border-radius: 999px; font-size: 0.85rem; border: 1px solid #ffb7c5; background: white; color: #ffb7c5; transition: 0.3s; }
+        .timeline-chip { background: white; border: 1px solid #ffb7c5; color: #ff85a2; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 6px rgba(255,183,197,0.1); cursor: pointer; }
+        .timeline-chip:hover { background: #fff5f7; }
+        .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; transition: 0.3s; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
     </style>
 </head>
@@ -29,8 +30,8 @@
 
     <div class="max-w-5xl mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-[#ff85a2] mb-4">🎀 VTuber総合番組表 🎀</h1>
-            <div class="flex justify-center gap-4 mb-6">
+            <h1 class="text-4xl font-bold text-[#ff85a2] mb-6 drop-shadow-sm">🎀 VTuber総合番組表 🎀</h1>
+            <div class="flex justify-center gap-4">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">✨ 配信一覧</button>
                 <button id="tabCalendar" class="nav-btn" onclick="switchTab('calendar')">📅 タイムライン</button>
             </div>
@@ -48,26 +49,24 @@
                     <option value="その他">💡 その他</option>
                 </select>
                 <input type="url" id="tweetUrl" placeholder="XポストURL" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md">登録！</button>
+                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md hover:opacity-90">登録！</button>
             </form>
         </section>
 
         <main id="viewMain">
-            <div class="flex justify-center gap-2 mb-6 overflow-x-auto pb-2">
-                <button onclick="filterGenre('すべて')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-50">ALL</button>
-                <button onclick="filterGenre('雑談')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-50">💬 雑談</button>
-                <button onclick="filterGenre('ゲーム')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-50">🎮 ゲーム</button>
-                <button onclick="filterGenre('歌枠')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-50">🎤 歌枠</button>
+            <div class="flex justify-center gap-2 mb-8 overflow-x-auto pb-2">
+                <button onclick="filterGenre('すべて')" class="bg-white border-2 border-pink-100 px-5 py-1.5 rounded-full text-sm font-bold text-gray-500">ALL</button>
+                <button onclick="filterGenre('雑談')" class="bg-white border-2 border-pink-100 px-5 py-1.5 rounded-full text-sm font-bold text-gray-500">💬 雑談</button>
+                <button onclick="filterGenre('ゲーム')" class="bg-white border-2 border-pink-100 px-5 py-1.5 rounded-full text-sm font-bold text-gray-500">🎮 ゲーム</button>
+                <button onclick="filterGenre('歌枠')" class="bg-white border-2 border-pink-100 px-5 py-1.5 rounded-full text-sm font-bold text-gray-500">🎤 歌枠</button>
             </div>
-            <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"></div>
+            <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8"></div>
         </main>
 
         <section id="viewCalendar" class="hidden">
-            <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-[#ffdeeb]">
-                <div id="dateSelector" class="flex justify-center gap-2 mb-8 flex-wrap">
-                    </div>
-                <div id="calendarContainer" class="space-y-0">
-                    </div>
+            <div class="bg-white p-6 rounded-[40px] shadow-xl border-4 border-white ring-4 ring-[#ffdeeb]">
+                <div id="dateSelector" class="flex justify-center gap-3 mb-10 flex-wrap"></div>
+                <div id="calendarContainer" class="space-y-0 px-2"></div>
             </div>
         </section>
     </div>
@@ -76,25 +75,43 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
         let currentGenre = "すべて";
-        let selectedTimelineDate = new Date().toISOString().split('T')[0];
+        let selectedTimelineDate = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD形式
 
-        // 起動時
+        // 日付を YYYY-MM-DD に強制変換する関数（これが肝）
+        function formatToDateStr(val) {
+            if (!val) return "";
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return String(val).split('T')[0]; // 変換不可なら文字列カット
+            return d.toLocaleDateString('sv-SE'); 
+        }
+
+        // 時刻を HH:mm に強制変換する関数
+        function formatToTimeStr(val) {
+            if (!val) return "00:00";
+            if (typeof val === 'string' && val.includes('T')) {
+                return val.split('T')[1].slice(0, 5);
+            }
+            if (typeof val === 'string' && val.includes(':')) {
+                return val.slice(0, 5);
+            }
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? "00:00" : d.toTimeString().slice(0, 5);
+        }
+
         window.onload = () => {
             document.getElementById('streamDate').value = selectedTimelineDate;
             setupDateSelector();
             fetchSchedules();
         };
 
-        // タイムライン用：今日から3日分の日付ボタンを作る
         function setupDateSelector() {
             const selector = document.getElementById('dateSelector');
             selector.innerHTML = '';
             const labels = ["今日", "明日", "明後日"];
-            
             for (let i = 0; i < 3; i++) {
                 const d = new Date();
                 d.setDate(d.getDate() + i);
-                const dateStr = d.toISOString().split('T')[0];
+                const dateStr = d.toLocaleDateString('sv-SE');
                 const btn = document.createElement('button');
                 btn.className = `date-selector-btn ${dateStr === selectedTimelineDate ? 'active' : ''}`;
                 btn.innerText = `${labels[i]} (${dateStr.slice(5)})`;
@@ -115,54 +132,55 @@
             } catch (e) { console.error(e); }
         }
 
-        function getEmbedUrl(url) {
-            const tweetId = url.split('/status/')[1]?.split('?')[0];
-            return tweetId ? `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=light` : url;
-        }
-
         function renderAll() {
             const listEl = document.getElementById('upcomingList');
             const calEl = document.getElementById('calendarContainer');
             listEl.innerHTML = '';
             calEl.innerHTML = '';
 
-            // タイムラインの枠生成
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
-                row.className = 'flex border-b border-pink-50 min-h-[55px] items-center';
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${i}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-3"></div>`;
+                row.className = 'flex border-b border-pink-50 min-h-[65px] items-center hover:bg-pink-50/30 transition';
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${i}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-4 py-2"></div>`;
                 calEl.appendChild(row);
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
 
             const filtered = allSchedules.filter(item => currentGenre === "すべて" || item.genre === currentGenre);
-            filtered.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-
+            
             filtered.forEach(item => {
-                const cleanTime = String(item.time).includes('T') ? String(item.time).split('T')[1].slice(0,5) : String(item.time).slice(0,5);
-                const cleanDate = String(item.date).split('T')[0];
+                const cleanDate = formatToDateStr(item.date);
+                const cleanTime = formatToTimeStr(item.time);
+                const tweetId = item.url.split('/status/')[1]?.split('?')[0];
 
                 // 配信一覧
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 tweet-card';
+                card.className = 'tweet-card';
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-2 px-1">
-                        <span class="text-md font-bold text-[#ff85a2]">⏰ ${cleanDate.slice(5)} ${cleanTime}</span>
-                        <span class="text-[10px] bg-pink-50 text-[#ff85a2] px-2 py-1 rounded-full border border-pink-100">${item.genre}</span>
+                    <div class="flex justify-between items-center p-4">
+                        <span class="text-lg font-bold text-[#ff85a2]">⏰ ${cleanDate.slice(5)} ${cleanTime}</span>
+                        <span class="text-xs font-bold bg-pink-50 text-[#ff85a2] px-3 py-1 rounded-full border border-pink-100">${item.genre}</span>
                     </div>
-                    <p class="text-xs font-bold text-gray-400 mb-3 px-1">${item.name} さん</p>
+                    <p class="text-sm font-bold text-gray-500 px-5 mb-2">${item.name} さん</p>
                     <div class="tweet-wrapper">
-                        <iframe class="tweet-iframe" src="${getEmbedUrl(item.url)}"></iframe>
+                        <iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=light"></iframe>
                     </div>
                 `;
                 listEl.appendChild(card);
 
-                // タイムライン（選択中の日付と一致するかチェック）
+                // タイムラインへの流し込み
                 if (cleanDate === selectedTimelineDate) {
                     const h = parseInt(cleanTime.split(':')[0]);
                     if (boxes[h]) {
-                        boxes[h].innerHTML += `<div class="timeline-chip">${cleanTime} | ${item.name}</div>`;
+                        const chip = document.createElement('div');
+                        chip.className = 'timeline-chip';
+                        chip.innerText = `${cleanTime} | ${item.name}`;
+                        chip.onclick = () => {
+                            switchTab('main');
+                            // 該当のカードまでスクロールする処理も可能
+                        };
+                        boxes[h].appendChild(chip);
                     }
                 }
             });
@@ -173,6 +191,7 @@
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
+            window.scrollTo(0,0);
         }
 
         function filterGenre(genre) {
@@ -184,6 +203,7 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
+            btn.innerText = "送信中...";
             const newData = {
                 name: document.getElementById('vtuberName').value,
                 date: document.getElementById('streamDate').value,
@@ -192,9 +212,11 @@
                 url: document.getElementById('tweetUrl').value
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
-            alert("登録依頼を送信しました！");
+            alert("登録しました！");
+            this.reset();
             fetchSchedules();
             btn.disabled = false;
+            btn.innerText = "登録！";
         };
     </script>
 </body>
