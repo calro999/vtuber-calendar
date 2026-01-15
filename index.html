@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://platform.twitter.com https://cdn.tailwindcss.com; shadow-dom 'self';">
-    
     <title>VTuber総合番組表🎀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
@@ -15,7 +13,8 @@
         .nav-btn { cursor: pointer; padding: 10px 16px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.85rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-        .tweet-card { min-height: 400px; }
+        /* iframeを中央寄せにするための設定 */
+        .tweet-container { width: 100%; display: flex; justify-content: center; min-height: 500px; background: #fff; border-radius: 15px; overflow: hidden; border: 1px solid #eee; }
         .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
     </style>
 </head>
@@ -64,23 +63,22 @@
         </section>
 
         <section id="viewTest" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-3xl border-2 border-blue-400">
-                <h2 class="font-bold text-blue-500 mb-4 text-center">X埋め込みテスト</h2>
-                <div id="testArea" class="grid grid-cols-1 gap-4">
-                    <blockquote class="twitter-tweet" data-dnt="true"><a href="https://x.com/X/status/1683498144214831104"></a></blockquote>
+            <div class="bg-white p-6 rounded-3xl border-2 border-blue-400 p-4">
+                <h2 class="font-bold text-blue-500 mb-4 text-center">X埋め込みテスト（iframe方式）</h2>
+                <div id="testArea" class="space-y-4">
+                    <div class="tweet-container">
+                        <iframe border=0 frameborder=0 height=550 width=500 src="https://twitframe.com/show?url=https://x.com/X/status/1683498144214831104"></iframe>
+                    </div>
                 </div>
             </div>
         </section>
     </div>
-
-    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
         let currentGenre = "すべて";
 
-        // 起動時
         window.onload = () => {
             document.getElementById('streamDate').value = new Date().toISOString().split('T')[0];
             fetchSchedules();
@@ -91,7 +89,7 @@
                 const res = await fetch(GAS_URL);
                 allSchedules = await res.json();
                 renderAll();
-            } catch (e) { console.error("GAS Fetch Error:", e); }
+            } catch (e) { console.error("Fetch Error:", e); }
         }
 
         function renderAll() {
@@ -99,11 +97,9 @@
             const calEl = document.getElementById('calendarContainer');
             if (!listEl || !calEl) return;
 
-            // 初期化
             listEl.innerHTML = '';
             calEl.innerHTML = '';
 
-            // タイムラインの枠を生成（これを先にやる）
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
@@ -120,16 +116,18 @@
                 const cleanTime = String(item.time).includes('T') ? String(item.time).split('T')[1].slice(0,5) : String(item.time).slice(0,5);
                 const cleanDate = String(item.date).split('T')[0];
 
-                // 配信一覧カード
+                // 配信一覧：iframe方式で表示
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 tweet-card';
+                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col';
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
+                    <div class="flex justify-between items-center mb-2 px-2">
                         <span class="text-lg font-bold text-[#ff85a2]">⏰ ${cleanDate.slice(5)} ${cleanTime}</span>
                         <span class="text-xs bg-pink-100 text-[#ff85a2] px-2 py-1 rounded-full">${item.genre}</span>
                     </div>
-                    <p class="text-sm font-bold text-gray-400 mb-2">${item.name} さん</p>
-                    <blockquote class="twitter-tweet" data-dnt="true"><a href="${item.url}"></a></blockquote>
+                    <p class="text-sm font-bold text-gray-400 mb-4 px-2">${item.name} さん</p>
+                    <div class="tweet-container">
+                        <iframe border=0 frameborder=0 height=500 width=100% src="https://twitframe.com/show?url=${encodeURIComponent(item.url)}"></iframe>
+                    </div>
                 `;
                 listEl.appendChild(card);
 
@@ -142,11 +140,6 @@
                     }
                 }
             });
-
-            // Xの読み込み命令（エラーが出ても止まらないようにtry-catch）
-            try {
-                if (window.twttr && twttr.widgets) twttr.widgets.load();
-            } catch (err) { console.warn("Twitter Widget Error (CSP related):", err); }
         }
 
         function switchTab(tab) {
@@ -156,7 +149,6 @@
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
             document.getElementById('tabTest').classList.toggle('active', tab === 'test');
-            try { if(window.twttr) twttr.widgets.load(); } catch(e){}
         }
 
         function filterGenre(genre) {
@@ -164,7 +156,6 @@
             renderAll();
         }
 
-        // フォーム
         document.getElementById('scheduleForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -178,7 +169,7 @@
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
             alert("登録しました！");
-            location.reload(); // CSPエラー対策として、登録後はリロードが最も安全
+            location.reload();
         };
     </script>
 </body>
