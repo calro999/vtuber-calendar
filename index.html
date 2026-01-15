@@ -13,9 +13,8 @@
         .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-        .tweet-card { min-height: 450px; border-radius: 20px; }
-        /* タイムラインのチップ */
-        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; margin-bottom: 2px; }
+        .tweet-card { min-height: 400px; border-radius: 20px; }
+        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -54,13 +53,11 @@
         </section>
 
         <main id="viewMain">
-            <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                </div>
+            <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </main>
 
         <section id="viewCalendar" class="hidden bg-white p-6 rounded-3xl shadow-lg border-2 border-[#ffdeeb]">
-            <div id="calendarContainer" class="space-y-0">
-                </div>
+            <div id="calendarContainer" class="space-y-2"></div>
         </section>
     </div>
 
@@ -72,15 +69,10 @@
         let allSchedules = [];
         let currentGenre = "すべて";
 
-        // ページが読み込まれたら開始
-        window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('streamDate').value = today;
-            
-            // 1. まずカレンダーのHTMLを生成
-            setupCalendarHTML();
-            // 2. その後データを取得
-            fetchSchedules();
+        // 起動時処理
+        window.addEventListener('load', async () => {
+            document.getElementById('streamDate').value = new Date().toISOString().split('T')[0];
+            await fetchSchedules();
         });
 
         async function fetchSchedules() {
@@ -89,48 +81,37 @@
                 allSchedules = await res.json();
                 updateDisplays();
             } catch (e) {
-                console.error("Fetch error:", e);
-                document.getElementById('upcomingList').innerHTML = "データの読み込みに失敗しました。";
-            }
-        }
-
-        function setupCalendarHTML() {
-            const container = document.getElementById('calendarContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            for (let i = 0; i < 24; i++) {
-                const row = document.createElement('div');
-                row.className = 'flex border-b border-pink-50 min-h-[60px] items-start py-2';
-                row.innerHTML = `
-                    <div class="w-16 font-bold text-[#ffb7c5] flex-shrink-0 text-center">${i}:00</div>
-                    <div id="hour-${i}" class="flex-1 px-2 flex flex-wrap gap-2"></div>
-                `;
-                container.appendChild(row);
+                console.error("Fetch Error:", e);
             }
         }
 
         function updateDisplays() {
             const listEl = document.getElementById('upcomingList');
-            if (!listEl) return;
+            const calEl = document.getElementById('calendarContainer');
+            if (!listEl || !calEl) return;
+
+            // クリア
             listEl.innerHTML = '';
-            
-            // タイムラインの中身を一旦空にする
+            calEl.innerHTML = '';
+
+            // タイムラインの24時間分の土台を先に作る
+            const hourMap = {};
             for (let i = 0; i < 24; i++) {
-                const hEl = document.getElementById(`hour-${i}`);
-                if (hEl) hEl.innerHTML = '';
+                const row = document.createElement('div');
+                row.className = 'flex border-b border-pink-50 min-h-[50px] items-start py-2';
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center">${i}:00</div><div id="hour-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
+                calEl.appendChild(row);
+                hourMap[i] = row.querySelector(`#hour-box-${i}`);
             }
 
             const filtered = allSchedules.filter(item => currentGenre === "すべて" || item.genre === currentGenre);
-            
-            // 日付と時間でソート
             filtered.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
             filtered.forEach(item => {
-                // データのクリーンアップ
                 const cleanTime = String(item.time).includes('T') ? String(item.time).split('T')[1].slice(0,5) : String(item.time).slice(0,5);
                 const cleanDate = String(item.date).split('T')[0];
 
-                // 1. メイン配信一覧カード
+                // 配信一覧カード作成
                 const card = document.createElement('div');
                 card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col tweet-card';
                 card.innerHTML = `
@@ -139,7 +120,7 @@
                         <span class="text-xs bg-pink-100 text-[#ff85a2] px-2 py-1 rounded-full">${item.genre}</span>
                     </div>
                     <div class="text-sm font-bold text-gray-400 mb-2 px-2">${item.name} さん</div>
-                    <div class="tweet-area">
+                    <div class="flex-1">
                         <blockquote class="twitter-tweet" data-dnt="true" data-theme="light">
                             <a href="${item.url}"></a>
                         </blockquote>
@@ -147,29 +128,29 @@
                 `;
                 listEl.appendChild(card);
 
-                // 2. タイムライン表示（今日のデータのみ）
+                // 今日の分のタイムライン処理
                 const today = new Date().toISOString().split('T')[0];
                 if (cleanDate === today) {
-                    const hour = parseInt(cleanTime.split(':')[0]);
-                    const hEl = document.getElementById(`hour-${hour}`);
-                    if (hEl) {
-                        const chip = document.createElement('div');
-                        chip.className = 'timeline-chip';
-                        chip.innerText = `${cleanTime} | ${item.name}`;
-                        hEl.appendChild(chip);
+                    const h = parseInt(cleanTime.split(':')[0]);
+                    if (hourMap[h]) {
+                        hourMap[h].innerHTML += `<div class="timeline-chip">${cleanTime} | ${item.name}</div>`;
                     }
                 }
             });
 
-            // Twitterの表示を指示
-            setTimeout(() => {
-                if (window.twttr && twttr.widgets) {
-                    twttr.widgets.load();
-                }
-            }, 500);
+            // Twitterの再描画命令を何度も出す（確実に表示するため）
+            renderTwitter();
         }
 
-        // フォーム送信
+        function renderTwitter() {
+            if (window.twttr && twttr.widgets) {
+                twttr.widgets.load();
+            } else {
+                // まだTwitterスクリプトが読み込まれていない場合は0.5秒後にリトライ
+                setTimeout(renderTwitter, 500);
+            }
+        }
+
         document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -185,9 +166,9 @@
             try {
                 await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
                 this.reset();
-                alert("登録依頼を送信しました！");
+                alert("登録しました！");
                 setTimeout(fetchSchedules, 2000);
-            } catch (err) { alert("送信エラー"); }
+            } catch (err) { alert("エラー"); }
             finally { btn.disabled = false; btn.innerText = "登録！"; }
         });
 
@@ -201,7 +182,7 @@
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
-            if (window.twttr) twttr.widgets.load();
+            renderTwitter();
         }
     </script>
 </body>
