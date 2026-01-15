@@ -17,19 +17,12 @@
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
-        
-        .timeline-btn { 
-            display: inline-flex; align-items: center; gap: 8px;
-            background: white; border: 2px solid #ffb7c5; color: #ff85a2; 
-            padding: 8px 16px; border-radius: 999px; font-size: 0.85rem; 
-            font-weight: bold; transition: 0.2s; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(255,183,197,0.1);
-            margin: 2px;
-        }
+        .timeline-btn { display: inline-flex; align-items: center; gap: 8px; background: white; border: 2px solid #ffb7c5; color: #ff85a2; padding: 8px 16px; border-radius: 999px; font-size: 0.85rem; font-weight: bold; transition: 0.2s; cursor: pointer; box-shadow: 0 2px 5px rgba(255,183,197,0.1); margin: 2px; }
         .timeline-btn:hover { background: #ffb7c5; color: white; }
         .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
+        input, select { font-size: 16px !important; } /* モバイルズーム防止 */
     </style>
 </head>
 <body class="text-gray-700">
@@ -44,18 +37,22 @@
         </header>
 
         <section class="glass-morphism p-6 rounded-3xl mb-10 shadow-md">
-            <form id="scheduleForm" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <input type="text" id="vtuberName" placeholder="配信者名" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <input type="date" id="streamDate" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <input type="time" id="startTime" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <select id="genre" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none bg-white text-sm">
+            <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+                <input type="text" id="vtuberName" placeholder="配信者名" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none col-span-2 lg:col-span-1" required>
+                <div class="flex gap-1 items-center">
+                    <select id="month" class="p-3 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
+                    <span class="text-[#ffb7c5] font-bold">/</span>
+                    <select id="day" class="p-3 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
+                </div>
+                <input type="time" id="startTime" class="p-3 rounded-xl border-2 border-[#ffdeeb]" required>
+                <select id="genre" class="p-3 rounded-xl border-2 border-[#ffdeeb] bg-white">
                     <option value="雑談">💬 雑談</option>
                     <option value="ゲーム">🎮 ゲーム</option>
                     <option value="歌枠">🎤 歌枠</option>
                     <option value="その他">💡 その他</option>
                 </select>
-                <input type="url" id="tweetUrl" placeholder="XポストURL" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md">登録！</button>
+                <input type="url" id="tweetUrl" placeholder="XポストURL" class="p-3 rounded-xl border-2 border-[#ffdeeb] col-span-2 lg:col-span-2" required>
+                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md col-span-2 lg:col-span-1">登録！</button>
             </form>
         </section>
 
@@ -66,7 +63,6 @@
         <section id="viewCalendar" class="hidden">
             <div class="bg-white p-6 rounded-[30px] shadow-xl border-2 border-[#ffdeeb]">
                 <div id="dateSelector" class="flex justify-center gap-3 mb-8 flex-wrap"></div>
-                <div id="debugInfo" class="text-center text-xs text-gray-400 mb-4"></div>
                 <div id="calendarContainer" class="space-y-0"></div>
             </div>
         </section>
@@ -76,99 +72,81 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
 
-        // 日本時間をJST基準で計算して YYYY-MM-DD を返す
-        function getJSTDateStr(offset = 0) {
+        // 日本時間の今日の日付をYYYY-MM-DDで取得
+        function getJSTDate(offset = 0) {
             const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             d.setDate(d.getDate() + offset);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
-        let selectedTimelineDate = getJSTDateStr(0);
-
-        // 【最強の解析関数】壊れた文字列から日付と時刻を救出する
-        function robustParse(item) {
-            const rawD = String(item.date || item.Date || "");
-            const rawT = String(item.time || item.Time || "");
-            
-            // 1. 日付の抽出
-            // "Jan 14 2026..." などの形式から年・月・日を探す
-            let y = "2026", m = "01", d = "01";
-            
-            // 月名のマッピング
-            const months = { Jan:"01", Feb:"02", Mar:"03", Apr:"04", May:"05", Jun:"06", Jul:"07", Aug:"08", Sep:"09", Oct:"10", Nov:"11", Dec:"12" };
-            
-            // YYYY-MM-DD 形式をまず探す
-            const isoMatch = rawD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            if (isoMatch) {
-                y = isoMatch[1];
-                m = isoMatch[2].padStart(2, '0');
-                d = isoMatch[3].padStart(2, '0');
-            } else {
-                // "Jan 14 2026" のような形式を探す
-                const altMatch = rawD.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
-                if (altMatch) {
-                    m = months[altMatch[1]] || "01";
-                    d = altMatch[2].padStart(2, '0');
-                    y = altMatch[3];
-                }
-            }
-
-            // 2. 時刻の抽出
-            let hh = "00", mm = "00";
-            const tMatch = rawT.match(/(\d{1,2}):(\d{1,2})/);
-            if (tMatch) {
-                hh = tMatch[1].padStart(2, '0');
-                mm = tMatch[2].padStart(2, '0');
-            } else {
-                // 時刻が日付文字列の中に含まれている場合 (an 14 2026 22:00:00)
-                const tInDMatch = rawD.match(/(\d{1,2}):(\d{1,2})/);
-                if (tInDMatch) {
-                    hh = tInDMatch[1].padStart(2, '0');
-                    mm = tInDMatch[2].padStart(2, '0');
-                }
-            }
-
-            return {
-                date: `${y}-${m}-${d}`,
-                time: `${hh}:${mm}`,
-                name: item.name || item.Name || "不明",
-                genre: item.genre || item.Genre || "その他",
-                url: item.url || item.Url || "#"
-            };
-        }
+        let selectedTimelineDate = getJSTDate(0);
 
         window.onload = () => {
-            document.getElementById('streamDate').value = getJSTDateStr(0);
+            initForm();
             setupDateSelector();
             fetchSchedules();
         };
+
+        function initForm() {
+            const mSel = document.getElementById('month');
+            const dSel = document.getElementById('day');
+            for(let i=1; i<=12; i++) mSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
+            for(let i=1; i<=31; i++) dSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
+            
+            const today = getJSTDate(0).split('-');
+            mSel.value = today[1];
+            dSel.value = today[2];
+        }
 
         function setupDateSelector() {
             const selector = document.getElementById('dateSelector');
             selector.innerHTML = '';
             const labels = ["今日", "明日", "明後日"];
             for (let i = 0; i < 3; i++) {
-                const ds = getJSTDateStr(i);
+                const ds = getJSTDate(i);
                 const btn = document.createElement('button');
                 btn.className = `date-selector-btn ${ds === selectedTimelineDate ? 'active' : ''}`;
                 btn.innerText = `${labels[i]} (${ds.slice(5)})`;
-                btn.onclick = () => {
-                    selectedTimelineDate = ds;
-                    setupDateSelector();
-                    renderAll();
-                };
+                btn.onclick = () => { selectedTimelineDate = ds; setupDateSelector(); renderAll(); };
                 selector.appendChild(btn);
             }
+        }
+
+        // 文字列として安全に日付・時刻を切り出す
+        function parseClean(item) {
+            const sD = String(item.date || item.Date || "");
+            const sT = String(item.time || item.Time || "");
+            const name = item.name || item.Name || "不明";
+            const genre = item.genre || item.Genre || "その他";
+            const url = item.url || item.Url || "#";
+
+            // 日本語やGMTが混ざった文字列から「数字」だけを抜き出す
+            const digits = (sD + " " + sT).match(/\d+/g) || ["2026", "01", "01", "00", "00"];
+            
+            // 年が4桁でない、または2025年以前なら2026に固定
+            let y = digits.find(d => d.length === 4) || "2026";
+            // 月日時間の特定（順番はGASの仕様に依存するが、一般的に出現順で拾う）
+            const parts = digits.filter(d => d.length <= 2);
+            let m = parts[0] || "01";
+            let d = parts[1] || "01";
+            let hh = parts[2] || "00";
+            let mm = parts[3] || "00";
+
+            // 万が一 月 > 12 などの場合は順序が入れ替わっている可能性を考慮
+            if (parseInt(m) > 12) [m, d] = [d, m];
+
+            return {
+                date: `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,
+                time: `${hh.padStart(2,'0')}:${mm.padStart(2,'0')}`,
+                name, genre, url
+            };
         }
 
         async function fetchSchedules() {
             try {
                 const res = await fetch(GAS_URL);
                 const json = await res.json();
-                allSchedules = json.map(i => robustParse(i));
+                allSchedules = json.map(i => parseClean(i));
                 renderAll();
             } catch (e) { console.error(e); }
         }
@@ -176,7 +154,6 @@
         function renderAll() {
             const listEl = document.getElementById('upcomingList');
             const calEl = document.getElementById('calendarContainer');
-            const debugEl = document.getElementById('debugInfo');
             listEl.innerHTML = ''; calEl.innerHTML = '';
 
             const boxes = {};
@@ -191,9 +168,9 @@
 
             allSchedules.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
-            let matchCount = 0;
             allSchedules.forEach(item => {
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
+                // 配信一覧
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
                 card.innerHTML = `
@@ -204,14 +181,12 @@
                         </div>
                         <span class="genre-tag">${item.genre}</span>
                     </div>
-                    <div class="tweet-wrapper">
-                        <iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=light"></iframe>
-                    </div>
+                    <div class="tweet-wrapper"><iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe></div>
                 `;
                 listEl.appendChild(card);
 
+                // タイムライン
                 if (item.date === selectedTimelineDate) {
-                    matchCount++;
                     const h = parseInt(item.time.split(':')[0]);
                     if (boxes[h]) {
                         const btn = document.createElement('button');
@@ -222,7 +197,6 @@
                     }
                 }
             });
-            debugEl.innerText = `【JST基準】${selectedTimelineDate} の予定: ${matchCount}件表示中`;
         }
 
         function switchTab(tab) {
@@ -230,23 +204,29 @@
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
-            window.scrollTo(0,0);
         }
 
         document.getElementById('scheduleForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
+            
+            // 今年を自動補完して送信
+            const year = new Date().getFullYear();
+            const month = document.getElementById('month').value;
+            const day = document.getElementById('day').value;
+            const time = document.getElementById('startTime').value;
+            
             const newData = {
                 name: document.getElementById('vtuberName').value,
-                date: document.getElementById('streamDate').value,
-                time: document.getElementById('startTime').value,
+                date: `${year}-${month}-${day}`, // 文字列として結合
+                time: time,
                 genre: document.getElementById('genre').value,
                 url: document.getElementById('tweetUrl').value
             };
+
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
             alert("登録しました！");
-            e.target.reset();
             fetchSchedules();
             btn.disabled = false;
         };
