@@ -18,19 +18,22 @@
         .filter-btn { padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; border: 1px solid #ffdeeb; background: white; cursor: pointer; transition: 0.2s; }
         .filter-btn.active { background: #ff85a2; color: white; border-color: #ff85a2; }
 
-        /* ポストカード共通 */
-        .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1.5rem; }
-        .card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
+        /* ポストカード（幅広対応） */
+        .tweet-card { background: white; border-radius: 24px; box-shadow: 0 10px 25px rgba(255,183,197,0.2); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 2rem; display: flex; flex-direction: column; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         
-        /* 【配信一覧】通常スケール */
-        .tweet-wrapper { height: 500px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
+        /* 埋め込みエリア */
+        .tweet-wrapper { height: 480px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
         .tweet-iframe { width: 100%; height: 600px; border: none; transform: scale(0.95); transform-origin: top center; }
 
-        /* 【おはV】縮小スケール（長文・引用対応） */
-        .ohv-wrapper { height: 650px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
+        /* おはVエリア（長文対応・さらに縮小） */
+        .ohv-wrapper { height: 600px; overflow-y: auto; background: #fff; display: flex; justify-content: center; }
         .ohv-iframe { width: 100%; height: 850px; border: none; transform: scale(0.85); transform-origin: top center; }
         
-        /* タイムラインボタン */
+        /* 応援ボタン（これ重要！） */
+        .cheer-btn { width: 100%; padding: 12px; background: #1da1f2; color: white; font-weight: bold; text-align: center; transition: 0.2s; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .cheer-btn:hover { background: #1a91da; opacity: 0.9; }
+
         .timeline-btn { display: inline-flex; align-items: center; gap: 6px; background: white; padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: bold; transition: 0.2s; cursor: pointer; box-shadow: 0 2px 5px rgba(255,183,197,0.1); margin: 2px; border: 2px solid; }
         .btn-chat { border-color: #ffb7c5; color: #ff85a2; }
         .btn-game { border-color: #a0e1ff; color: #40a9ff; }
@@ -52,9 +55,8 @@
 </head>
 <body class="text-gray-700">
 
-    <div class="max-w-5xl mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-[#ff85a2] mb-6 drop-shadow-sm">🎀 VTuber総合番組表 🎀</h1>
+    <div class="max-w-7xl mx-auto p-4 md:p-8"> <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#ff85a2] mb-6 drop-shadow-sm">🎀 VTuber総合番組表 🎀</h1>
             <div class="flex justify-center gap-2 md:gap-4 flex-wrap">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">✨ 配信一覧</button>
                 <button id="tabCalendar" class="nav-btn" onclick="switchTab('calendar')">📅 タイムライン</button>
@@ -71,30 +73,30 @@
                 <select id="genre" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] bg-white"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
                 <select id="gender" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white w-full"><option value="♀">♀ 女子</option><option value="♂">♂ 男子</option><option value="その他">❔ 他</option></select>
                 <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] col-span-2 outline-none" required>
-                <button type="submit" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md active:scale-95 transition-transform">配信登録！</button>
+                <button type="submit" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md">登録！</button>
             </form>
         </section>
 
         <section id="formOhv" class="glass-morphism p-5 rounded-3xl mb-10 shadow-md hidden">
-            <div class="mb-2"><span class="form-label">☀️ おはようVTuber登録（URLのみでOK！）</span></div>
+            <div class="mb-2"><span class="form-label">☀️ おはようVTuber登録（URLのみ！）</span></div>
             <form id="ohvForm" class="flex flex-wrap gap-3">
                 <input type="text" id="ohvName" placeholder="お名前" class="flex-1 min-w-[150px] p-2 px-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
                 <select id="ohvGender" class="w-24 p-2 rounded-xl border-2 border-[#ffdeeb] bg-white"><option value="♀">♀ 女子</option><option value="♂">♂ 男子</option><option value="その他">❔ 他</option></select>
                 <input type="url" id="ohvUrl" placeholder="おはVポストのURLをペースト" class="flex-[2] min-w-[250px] p-2 px-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
-                <button type="submit" class="bg-orange-400 hover:bg-orange-500 text-white font-bold px-8 py-2 rounded-xl shadow-md active:scale-95 transition-transform">投稿！</button>
+                <button type="submit" class="bg-orange-400 hover:bg-orange-500 text-white font-bold px-8 py-2 rounded-xl shadow-md">投稿！</button>
             </form>
         </section>
 
-        <div id="filterBar" class="mb-4 flex justify-end gap-2">
+        <div id="filterBar" class="mb-6 flex justify-end gap-2">
             <span class="text-xs self-center font-bold text-[#ffb7c5]">表示切替：</span>
             <button class="filter-btn active" data-gender="All" onclick="setGenderFilter('All')">ALL</button>
             <button class="filter-btn" data-gender="♀" onclick="setGenderFilter('♀')">♀ ONLY</button>
             <button class="filter-btn" data-gender="♂" onclick="setGenderFilter('♂')">♂ ONLY</button>
         </div>
 
-        <main id="viewMain"><div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></main>
+        <main id="viewMain"><div id="upcomingList" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div></main>
         <section id="viewCalendar" class="hidden"><div class="bg-white p-6 rounded-[30px] shadow-xl border-2 border-[#ffdeeb]"><div id="dateSelector" class="flex justify-center gap-3 mb-8 flex-wrap"></div><div id="calendarContainer" class="space-y-0"></div></div></section>
-        <section id="viewOhv" class="hidden"><div id="ohvList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></section>
+        <section id="viewOhv" class="hidden"><div id="ohvList" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div></section>
     </div>
 
     <script>
@@ -200,6 +202,10 @@
                         <div class="${isOhv?'ohv-wrapper':'tweet-wrapper'}">
                             <iframe class="${isOhv?'ohv-iframe':'tweet-iframe'}" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe>
                         </div>
+                        <a href="${item.url}" target="_blank" class="cheer-btn">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            Xで直接応援（いいね/RP/返信）
+                        </a>
                     </div>
                 `;
             };
@@ -241,7 +247,7 @@
 
         async function submitData(data) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) });
-            alert("登録完了！今日も一日頑張りましょう✨");
+            alert("登録完了！");
             fetchSchedules();
         }
 
