@@ -18,7 +18,6 @@
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
         
-        /* タイムラインボタン */
         .timeline-btn { 
             display: inline-flex; align-items: center; gap: 8px;
             background: white; border: 2px solid #ffb7c5; color: #ff85a2; 
@@ -29,7 +28,6 @@
         }
         .timeline-btn:hover { background: #ffb7c5; color: white; }
         .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
-
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
     </style>
@@ -78,41 +76,68 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
 
-        // 日本時間をYYYY-MM-DDで取得
+        // 日本時間をJST基準で計算して YYYY-MM-DD を返す
         function getJSTDateStr(offset = 0) {
             const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             d.setDate(d.getDate() + offset);
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
         }
 
         let selectedTimelineDate = getJSTDateStr(0);
 
-        // あらゆる形式のデータから情報を抜き出す
-        function parseItem(item) {
-            // プロパティ名が大文字小文字どっちでもいいようにする
-            const rawD = item.date || item.Date || "";
-            const rawT = item.time || item.Time || "";
-            const name = item.name || item.Name || "不明";
-            const genre = item.genre || item.Genre || "その他";
-            const url = item.url || item.Url || "#";
-
-            // 日付: 2026-01-15 みたいなのを抜き出す
-            let d = "";
-            const dMatch = String(rawD).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            if (dMatch) {
-                d = `${dMatch[1]}-${dMatch[2].padStart(2, '0')}-${dMatch[3].padStart(2, '0')}`;
+        // 【最強の解析関数】壊れた文字列から日付と時刻を救出する
+        function robustParse(item) {
+            const rawD = String(item.date || item.Date || "");
+            const rawT = String(item.time || item.Time || "");
+            
+            // 1. 日付の抽出
+            // "Jan 14 2026..." などの形式から年・月・日を探す
+            let y = "2026", m = "01", d = "01";
+            
+            // 月名のマッピング
+            const months = { Jan:"01", Feb:"02", Mar:"03", Apr:"04", May:"05", Jun:"06", Jul:"07", Aug:"08", Sep:"09", Oct:"10", Nov:"11", Dec:"12" };
+            
+            // YYYY-MM-DD 形式をまず探す
+            const isoMatch = rawD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (isoMatch) {
+                y = isoMatch[1];
+                m = isoMatch[2].padStart(2, '0');
+                d = isoMatch[3].padStart(2, '0');
             } else {
-                d = String(rawD).split('T')[0];
+                // "Jan 14 2026" のような形式を探す
+                const altMatch = rawD.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+                if (altMatch) {
+                    m = months[altMatch[1]] || "01";
+                    d = altMatch[2].padStart(2, '0');
+                    y = altMatch[3];
+                }
             }
 
-            // 時刻: 15:00 みたいなのを抜き出す
-            let t = "00:00";
-            const tMatch = String(rawT).match(/(\d{1,2}):(\d{1,2})/);
+            // 2. 時刻の抽出
+            let hh = "00", mm = "00";
+            const tMatch = rawT.match(/(\d{1,2}):(\d{1,2})/);
             if (tMatch) {
-                t = `${tMatch[1].padStart(2, '0')}:${tMatch[2].padStart(2, '0')}`;
+                hh = tMatch[1].padStart(2, '0');
+                mm = tMatch[2].padStart(2, '0');
+            } else {
+                // 時刻が日付文字列の中に含まれている場合 (an 14 2026 22:00:00)
+                const tInDMatch = rawD.match(/(\d{1,2}):(\d{1,2})/);
+                if (tInDMatch) {
+                    hh = tInDMatch[1].padStart(2, '0');
+                    mm = tInDMatch[2].padStart(2, '0');
+                }
             }
 
-            return { date: d, time: t, name, genre, url };
+            return {
+                date: `${y}-${m}-${d}`,
+                time: `${hh}:${mm}`,
+                name: item.name || item.Name || "不明",
+                genre: item.genre || item.Genre || "その他",
+                url: item.url || item.Url || "#"
+            };
         }
 
         window.onload = () => {
@@ -143,7 +168,7 @@
             try {
                 const res = await fetch(GAS_URL);
                 const json = await res.json();
-                allSchedules = json.map(i => parseItem(i));
+                allSchedules = json.map(i => robustParse(i));
                 renderAll();
             } catch (e) { console.error(e); }
         }
@@ -154,7 +179,6 @@
             const debugEl = document.getElementById('debugInfo');
             listEl.innerHTML = ''; calEl.innerHTML = '';
 
-            // タイムラインの土台作成
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
@@ -169,7 +193,6 @@
 
             let matchCount = 0;
             allSchedules.forEach(item => {
-                // 1. 配信一覧カード
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
@@ -187,10 +210,6 @@
                 `;
                 listEl.appendChild(card);
 
-                // 2. タイムライン表示判定
-                // デバッグ用に、今探している日付とデータの持っている日付をログに出す
-                console.log(`Comparing: Target[${selectedTimelineDate}] with Data[${item.date}]`);
-
                 if (item.date === selectedTimelineDate) {
                     matchCount++;
                     const h = parseInt(item.time.split(':')[0]);
@@ -203,8 +222,7 @@
                     }
                 }
             });
-
-            debugEl.innerText = `${selectedTimelineDate} の予定: ${matchCount}件見つかりました`;
+            debugEl.innerText = `【JST基準】${selectedTimelineDate} の予定: ${matchCount}件表示中`;
         }
 
         function switchTab(tab) {
@@ -212,6 +230,7 @@
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
+            window.scrollTo(0,0);
         }
 
         document.getElementById('scheduleForm').onsubmit = async (e) => {
