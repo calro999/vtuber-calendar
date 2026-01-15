@@ -10,49 +10,37 @@
         body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fff5f7; }
         .pink-gradient { background: linear-gradient(135deg, #ffdeeb 0%, #ffb7c5 100%); }
         .glass-morphism { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 2px solid #ffb7c5; }
-        .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
+        .nav-btn { cursor: pointer; padding: 10px 25px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
 
-        /* 配信一覧カードの調整 */
+        /* フィルタボタン */
+        .filter-btn { padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; border: 1px solid #ffdeeb; background: white; cursor: pointer; transition: 0.2s; }
+        .filter-btn.active { background: #ff85a2; color: white; border-color: #ff85a2; }
+
+        /* カードと埋め込み */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
+        .tweet-wrapper { height: 380px; overflow-y: auto; background: #fff; display: flex; justify-content: center; padding: 5px; }
+        .tweet-iframe { width: 100%; min-height: 500px; border: none; transform: scale(0.92); transform-origin: top center; }
         
-        /* ポストの文字サイズを擬似的に小さく表示するための調整 */
-        .tweet-wrapper { 
-            height: 380px; 
-            overflow-y: auto; 
-            background: #fff; 
-            display: flex;
-            justify-content: center;
-            padding: 5px;
-        }
-        .tweet-iframe { 
-            width: 100%; 
-            min-height: 500px; 
-            border: none; 
-            transform: scale(0.92); /* 全体を少し縮小して枠内に収める */
-            transform-origin: top center;
-        }
-        
-        .timeline-btn { 
-            display: inline-flex; align-items: center; gap: 8px;
-            background: white; padding: 8px 16px; border-radius: 999px; 
-            font-size: 0.85rem; font-weight: bold; transition: 0.2s; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(255,183,197,0.1); margin: 2px; border: 2px solid;
-        }
+        /* タイムライン */
+        .timeline-btn { display: inline-flex; align-items: center; gap: 6px; background: white; padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: bold; transition: 0.2s; cursor: pointer; box-shadow: 0 2px 5px rgba(255,183,197,0.1); margin: 2px; border: 2px solid; }
         .btn-chat { border-color: #ffb7c5; color: #ff85a2; }
         .btn-game { border-color: #a0e1ff; color: #40a9ff; }
         .btn-song { border-color: #c2ffb7; color: #4ecb3d; }
         .btn-etc  { border-color: #ffe0b7; color: #ff9f40; }
 
         .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
+        .gender-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .tag-female { background: #ffebee; color: #ff4081; }
+        .tag-male { background: #e3f2fd; color: #2196f3; }
+        .tag-other { background: #f5f5f5; color: #757575; }
+
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
         
-        /* フォーム入力欄のサイズ調整 */
-        input, select { font-size: 14px !important; height: 42px; transition: 0.2s; }
-        input:focus, select:focus { border-color: #ffb7c5; background-color: #fffafb; }
+        input, select { font-size: 14px !important; height: 42px; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -60,9 +48,10 @@
     <div class="max-w-5xl mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-[#ff85a2] mb-6 drop-shadow-sm">🎀 VTuber総合番組表 🎀</h1>
-            <div class="flex justify-center gap-4">
+            <div class="flex justify-center gap-2 md:gap-4 flex-wrap">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">✨ 配信一覧</button>
                 <button id="tabCalendar" class="nav-btn" onclick="switchTab('calendar')">📅 タイムライン</button>
+                <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">☀️ おはV</button>
             </div>
         </header>
 
@@ -85,12 +74,32 @@
                     <option value="歌枠">🎤 歌枠</option>
                     <option value="その他">💡 その他</option>
                 </select>
-                
-                <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] col-span-2 outline-none" required>
+
+                <div class="flex gap-1">
+                    <select id="gender" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white w-full">
+                        <option value="♀">♀ 女子</option>
+                        <option value="♂">♂ 男子</option>
+                        <option value="その他">❔ 他</option>
+                    </select>
+                </div>
+
+                <select id="postType" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white">
+                    <option value="配信">📺 配信</option>
+                    <option value="おはV">☀️ おはV</option>
+                </select>
                 
                 <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md active:scale-95 transition-transform">登録！</button>
+                
+                <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 px-3 rounded-xl border-2 border-[#ffdeeb] col-span-2 md:col-span-4 lg:col-span-7 outline-none" required>
             </form>
         </section>
+
+        <div id="filterBar" class="mb-4 flex justify-end gap-2">
+            <span class="text-xs self-center font-bold text-[#ffb7c5]">表示切替：</span>
+            <button class="filter-btn active" data-gender="All" onclick="setGenderFilter('All')">ALL</button>
+            <button class="filter-btn" data-gender="♀" onclick="setGenderFilter('♀')">♀ ONLY</button>
+            <button class="filter-btn" data-gender="♂" onclick="setGenderFilter('♂')">♂ ONLY</button>
+        </div>
 
         <main id="viewMain">
             <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -102,11 +111,16 @@
                 <div id="calendarContainer" class="space-y-0"></div>
             </div>
         </section>
+
+        <section id="viewOhv" class="hidden">
+            <div id="ohvList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
+        let currentGenderFilter = "All";
 
         function getJSTDateStr(offset = 0) {
             const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
@@ -134,10 +148,19 @@
                 const ds = getJSTDateStr(i);
                 const btn = document.createElement('button');
                 btn.className = `date-selector-btn ${ds === selectedTimelineDate ? 'active' : ''}`;
-                btn.innerText = `${label}(${ds.slice(5)})`;
+                // 表記を 01/15 に変更
+                btn.innerText = `${label}(${ds.slice(5).replace('-','/')})`;
                 btn.onclick = () => { selectedTimelineDate = ds; setupDateSelector(); renderAll(); };
                 selector.appendChild(btn);
             });
+        }
+
+        function setGenderFilter(gender) {
+            currentGenderFilter = gender;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.gender === gender);
+            });
+            renderAll();
         }
 
         function parseClean(item) {
@@ -149,14 +172,25 @@
             let hh = "00", mm = "00";
             const tm = sTime.match(/(\d{1,2}):(\d{1,2})/);
             if(tm) { [hh, mm] = [tm[1].padStart(2,'0'), tm[2].padStart(2,'0')]; }
-            return { date: `${y}-${m}-${d}`, time: `${hh}:${mm}`, name: item.name || "不明", genre: item.genre || "その他", url: item.url || "#" };
+            
+            return { 
+                date: `${y}-${m}-${d}`, 
+                time: `${hh}:${mm}`, 
+                name: item.name || "不明", 
+                genre: item.genre || "その他", 
+                url: item.url || "#",
+                gender: item.gender || "♀",
+                type: item.type || "配信"
+            };
         }
 
         async function fetchSchedules() {
             try {
                 const res = await fetch(GAS_URL);
                 const json = await res.json();
-                allSchedules = json.map(i => parseClean(i));
+                const yesterday = getJSTDateStr(-1);
+                // データの軽量化：昨日より前のデータは除外して読み込む
+                allSchedules = json.map(i => parseClean(i)).filter(i => i.date >= yesterday);
                 renderAll();
             } catch (e) { console.error(e); }
         }
@@ -164,14 +198,14 @@
         function renderAll() {
             const listEl = document.getElementById('upcomingList');
             const calEl = document.getElementById('calendarContainer');
-            listEl.innerHTML = ''; calEl.innerHTML = '';
+            const ohvEl = document.getElementById('ohvList');
+            listEl.innerHTML = ''; calEl.innerHTML = ''; ohvEl.innerHTML = '';
 
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
                 row.className = 'flex border-b border-pink-50 min-h-[50px] items-center';
-                const hStr = String(i).padStart(2, '0');
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${hStr}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-4 py-1"></div>`;
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${String(i).padStart(2,'0')}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-4 py-1"></div>`;
                 calEl.appendChild(row);
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
@@ -179,30 +213,40 @@
             allSchedules.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
             allSchedules.forEach(item => {
-                const tweetId = item.url.split('/status/')[1]?.split('?')[0];
-                const card = document.createElement('div');
-                card.className = 'tweet-card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5)} ${item.time}</span>
-                            <span class="text-gray-700 font-bold text-sm">| ${item.name}</span>
-                        </div>
-                        <span class="genre-tag">${item.genre}</span>
-                    </div>
-                    <div class="tweet-wrapper"><iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe></div>
-                `;
-                listEl.appendChild(card);
+                // 性別フィルタ適用
+                if (currentGenderFilter !== "All" && item.gender !== currentGenderFilter) return;
 
-                if (item.date === selectedTimelineDate) {
-                    const h = parseInt(item.time.split(':')[0]);
-                    if (boxes[h]) {
-                        const gClass = item.genre.includes("雑談") ? "btn-chat" : item.genre.includes("ゲーム") ? "btn-game" : item.genre.includes("歌枠") ? "btn-song" : "btn-etc";
-                        const btn = document.createElement('button');
-                        btn.className = `timeline-btn ${gClass}`;
-                        btn.innerHTML = `<span class="text-[10px] opacity-60">${item.time}</span> <span>${item.name}</span>`;
-                        btn.onclick = () => window.open(item.url, '_blank');
-                        boxes[h].appendChild(btn);
+                const tweetId = item.url.split('/status/')[1]?.split('?')[0];
+                const gTag = `<span class="gender-tag ${item.gender==='♀'?'tag-female':item.gender==='♂'?'tag-male':'tag-other'}">${item.gender}</span>`;
+                
+                const cardHTML = `
+                    <div class="tweet-card">
+                        <div class="card-header">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5).replace('-','/')} ${item.time}</span>
+                                ${gTag}
+                                <span class="text-gray-700 font-bold text-sm">| ${item.name}</span>
+                            </div>
+                            <span class="genre-tag">${item.genre}</span>
+                        </div>
+                        <div class="tweet-wrapper"><iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}"></iframe></div>
+                    </div>
+                `;
+
+                if (item.type === "おはV") {
+                    ohvEl.innerHTML += cardHTML;
+                } else {
+                    listEl.innerHTML += cardHTML;
+                    if (item.date === selectedTimelineDate) {
+                        const h = parseInt(item.time.split(':')[0]);
+                        if (boxes[h]) {
+                            const gClass = item.genre.includes("雑談") ? "btn-chat" : item.genre.includes("ゲーム") ? "btn-game" : item.genre.includes("歌枠") ? "btn-song" : "btn-etc";
+                            const btn = document.createElement('button');
+                            btn.className = `timeline-btn ${gClass}`;
+                            btn.innerHTML = `<span class="opacity-60 text-[10px]">${item.time}</span><span>${item.gender} ${item.name}</span>`;
+                            btn.onclick = () => window.open(item.url, '_blank');
+                            boxes[h].appendChild(btn);
+                        }
                     }
                 }
             });
@@ -211,8 +255,12 @@
         function switchTab(tab) {
             document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
+            document.getElementById('viewOhv').classList.toggle('hidden', tab !== 'ohv');
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
+            document.getElementById('tabOhv').classList.toggle('active', tab === 'ohv');
+            // おはVタブの時はフィルタバーを隠す（必要に応じて）
+            document.getElementById('filterBar').classList.toggle('hidden', tab === 'ohv');
         }
 
         document.getElementById('scheduleForm').onsubmit = async (e) => {
@@ -224,7 +272,9 @@
                 date: `2026-${document.getElementById('month').value}-${document.getElementById('day').value}`,
                 time: document.getElementById('startTime').value,
                 genre: document.getElementById('genre').value,
-                url: document.getElementById('tweetUrl').value
+                url: document.getElementById('tweetUrl').value,
+                gender: document.getElementById('gender').value,
+                type: document.getElementById('postType').value
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
             alert("登録しました！");
