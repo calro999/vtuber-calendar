@@ -22,7 +22,6 @@
         .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
-        input, select { font-size: 16px !important; } /* モバイルズーム防止 */
     </style>
 </head>
 <body class="text-gray-700">
@@ -72,7 +71,6 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
 
-        // 日本時間の今日の日付をYYYY-MM-DDで取得
         function getJSTDate(offset = 0) {
             const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             d.setDate(d.getDate() + offset);
@@ -92,7 +90,6 @@
             const dSel = document.getElementById('day');
             for(let i=1; i<=12; i++) mSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
             for(let i=1; i<=31; i++) dSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
-            
             const today = getJSTDate(0).split('-');
             mSel.value = today[1];
             dSel.value = today[2];
@@ -112,33 +109,49 @@
             }
         }
 
-        // 文字列として安全に日付・時刻を切り出す
+        // --- ここを大幅強化 ---
         function parseClean(item) {
             const sD = String(item.date || item.Date || "");
             const sT = String(item.time || item.Time || "");
-            const name = item.name || item.Name || "不明";
-            const genre = item.genre || item.Genre || "その他";
-            const url = item.url || item.Url || "#";
-
-            // 日本語やGMTが混ざった文字列から「数字」だけを抜き出す
-            const digits = (sD + " " + sT).match(/\d+/g) || ["2026", "01", "01", "00", "00"];
             
-            // 年が4桁でない、または2025年以前なら2026に固定
-            let y = digits.find(d => d.length === 4) || "2026";
-            // 月日時間の特定（順番はGASの仕様に依存するが、一般的に出現順で拾う）
-            const parts = digits.filter(d => d.length <= 2);
-            let m = parts[0] || "01";
-            let d = parts[1] || "01";
-            let hh = parts[2] || "00";
-            let mm = parts[3] || "00";
+            // 1. 日付の抽出 (YYYY-MM-DD)
+            // 壊れた文字列 "an 14 2026 22:00:00" から "2026" と "14" と月名を拾う
+            let y = "2026", m = "01", d = "01";
+            const months = { Jan:"01", Feb:"02", Mar:"03", Apr:"04", May:"05", Jun:"06", Jul:"07", Aug:"08", Sep:"09", Oct:"10", Nov:"11", Dec:"12" };
+            
+            // YYYY-MM-DD 形式
+            const iso = sD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (iso) {
+                [y, m, d] = [iso[1], iso[2], iso[3]];
+            } else {
+                // "Jan 14 2026" 形式
+                const alt = sD.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+                if (alt) {
+                    m = months[alt[1]] || "01";
+                    d = alt[2];
+                    y = alt[3];
+                }
+            }
 
-            // 万が一 月 > 12 などの場合は順序が入れ替わっている可能性を考慮
-            if (parseInt(m) > 12) [m, d] = [d, m];
+            // 2. 時刻の抽出 (HH:mm)
+            // 日付文字列の中に時刻が含まれている場合を最優先で防ぐ
+            let hh = "00", mm = "00";
+            // まずTime列を単体で見る
+            const timeColMatch = sT.match(/(\d{1,2}):(\d{1,2})/);
+            if (timeColMatch) {
+                [hh, mm] = [timeColMatch[1], timeColMatch[2]];
+            } else {
+                // Time列が空ならDate列から探す
+                const dateColMatch = sD.match(/(\d{1,2}):(\d{1,2})/);
+                if (dateColMatch) [hh, mm] = [dateColMatch[1], dateColMatch[2]];
+            }
 
             return {
                 date: `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,
                 time: `${hh.padStart(2,'0')}:${mm.padStart(2,'0')}`,
-                name, genre, url
+                name: item.name || item.Name || "不明",
+                genre: item.genre || item.Genre || "その他",
+                url: item.url || item.Url || "#"
             };
         }
 
@@ -170,7 +183,6 @@
 
             allSchedules.forEach(item => {
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
-                // 配信一覧
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
                 card.innerHTML = `
@@ -185,7 +197,6 @@
                 `;
                 listEl.appendChild(card);
 
-                // タイムライン
                 if (item.date === selectedTimelineDate) {
                     const h = parseInt(item.time.split(':')[0]);
                     if (boxes[h]) {
@@ -210,21 +221,13 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            
-            // 今年を自動補完して送信
-            const year = new Date().getFullYear();
-            const month = document.getElementById('month').value;
-            const day = document.getElementById('day').value;
-            const time = document.getElementById('startTime').value;
-            
             const newData = {
                 name: document.getElementById('vtuberName').value,
-                date: `${year}-${month}-${day}`, // 文字列として結合
-                time: time,
+                date: `2026-${document.getElementById('month').value}-${document.getElementById('day').value}`,
+                time: document.getElementById('startTime').value,
                 genre: document.getElementById('genre').value,
                 url: document.getElementById('tweetUrl').value
             };
-
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
             alert("登録しました！");
             fetchSchedules();
