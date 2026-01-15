@@ -18,7 +18,6 @@
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
         
-        /* タイムラインボタン（カテゴリ別カラー） */
         .timeline-btn { 
             display: inline-flex; align-items: center; gap: 8px;
             background: white; padding: 8px 16px; border-radius: 999px; 
@@ -34,7 +33,6 @@
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
         .date-selector-btn.active { background: #ffb7c5; color: white; }
         
-        /* フォームサイズ微調整 */
         input, select { font-size: 14px !important; }
     </style>
 </head>
@@ -51,7 +49,7 @@
 
         <section class="glass-morphism p-4 rounded-3xl mb-10 shadow-md">
             <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                <input type="text" id="vtuberName" placeholder="名" class="p-2 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                <input type="text" id="vtuberName" placeholder="配信者名" class="p-2 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
                 <div class="flex gap-1 items-center">
                     <select id="month" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
                     <select id="day" class="p-2 rounded-xl border-2 border-[#ffdeeb] bg-white flex-1"></select>
@@ -63,7 +61,7 @@
                     <option value="歌枠">🎤 歌枠</option>
                     <option value="その他">💡 その他</option>
                 </select>
-                <input type="url" id="tweetUrl" placeholder="URL" class="p-2 rounded-xl border-2 border-[#ffdeeb] col-span-2" required>
+                <input type="url" id="tweetUrl" placeholder="ポストURL" class="p-2 rounded-xl border-2 border-[#ffdeeb] col-span-2" required>
                 <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-2 rounded-xl shadow-md">登録！</button>
             </form>
         </section>
@@ -84,6 +82,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
 
+        // 日本時間の基準を取得（ここだけはタイムゾーンを考慮）
         function getJSTDateStr(offset = 0) {
             const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             d.setDate(d.getDate() + offset);
@@ -116,31 +115,22 @@
             });
         }
 
-        // --- バグの根源：ここを「完全文字列抽出」に変更 ---
+        // --- 時差バグを物理的に破壊する関数 ---
         function parseClean(item) {
-            const rawD = String(item.date || "");
-            const rawT = String(item.time || "");
+            // 文字列化。19:42などの誤変換の元になる Date オブジェクト化を徹底回避
+            const sD = String(item.date || "");
+            const sT = String(item.time || "");
 
-            // 1. 日付抽出 (正規表現で数字だけを引っこ抜く)
-            let y = "2026", m = "01", d = "15";
-            const dMatch = rawD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            if (dMatch) {
-                y = dMatch[1];
-                m = dMatch[2].padStart(2, '0');
-                d = dMatch[3].padStart(2, '0');
-            } else {
-                // シリアル値等で日付が壊れている場合の最終防衛：今日の日付を入れる
-                const today = getJSTDateStr(0).split('-');
-                [y, m, d] = today;
-            }
+            // 【日付】YYYY-MM-DD の形を文字列から「数字」としてだけ抜き出す
+            let y="2026", m="01", d="01";
+            const dm = sD.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if(dm) { [y, m, d] = [dm[1], dm[2].padStart(2,'0'), dm[3].padStart(2,'0')]; }
 
-            // 2. 時刻抽出 (正規表現で HH:mm 形式だけを引っこ抜く)
-            let hh = "00", mm = "00";
-            const tMatch = (rawT + " " + rawD).match(/(\d{1,2}):(\d{1,2})/);
-            if (tMatch) {
-                hh = tMatch[1].padStart(2, '0');
-                mm = tMatch[2].padStart(2, '0');
-            }
+            // 【時刻】HH:mm の形を文字列から抜き出す。計算は1ミリもしない。
+            let hh="00", mm="00";
+            // sTまたはsDの中から「数字:数字」のパターンを探す
+            const tm = (sT + " " + sD).match(/(\d{1,2}):(\d{1,2})/);
+            if(tm) { [hh, mm] = [tm[1].padStart(2,'0'), tm[2].padStart(2,'0')]; }
 
             return {
                 date: `${y}-${m}-${d}`,
@@ -155,6 +145,7 @@
             try {
                 const res = await fetch(GAS_URL);
                 const json = await res.json();
+                // 全てのデータを「物理的な文字列」として解析
                 allSchedules = json.map(i => parseClean(i));
                 renderAll();
             } catch (e) { console.error(e); }
@@ -179,7 +170,6 @@
 
             allSchedules.forEach(item => {
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
-                // 一覧表示
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
                 card.innerHTML = `
@@ -194,7 +184,6 @@
                 `;
                 listEl.appendChild(card);
 
-                // タイムライン
                 if (item.date === selectedTimelineDate) {
                     const h = parseInt(item.time.split(':')[0]);
                     if (boxes[h]) {
@@ -220,6 +209,7 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
+            // 登録時も、現在地（タイ）の時間は無視して、入力された「文字」をそのまま送る
             const newData = {
                 name: document.getElementById('vtuberName').value,
                 date: `2026-${document.getElementById('month').value}-${document.getElementById('day').value}`,
@@ -228,7 +218,7 @@
                 url: document.getElementById('tweetUrl').value
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
-            alert("登録しました！");
+            alert("登録完了！");
             fetchSchedules();
             btn.disabled = false;
         };
