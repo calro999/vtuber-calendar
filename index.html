@@ -13,22 +13,21 @@
         .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-
-        /* 配信一覧カード */
         .tweet-card { background: white; border-radius: 20px; box-shadow: 0 4px 12px rgba(255,183,197,0.15); border: 1px solid #ffdeeb; overflow: hidden; margin-bottom: 1rem; }
         .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #fffafb; border-bottom: 1px solid #fff0f3; }
         .tweet-wrapper { height: 350px; overflow-y: auto; background: #fff; }
         .tweet-iframe { width: 100%; height: 500px; border: none; }
-
-        /* タイムライン用ボタン（チップ） */
+        
+        /* タイムラインボタン */
         .timeline-btn { 
             display: inline-flex; align-items: center; gap: 8px;
             background: white; border: 2px solid #ffb7c5; color: #ff85a2; 
             padding: 8px 16px; border-radius: 999px; font-size: 0.85rem; 
             font-weight: bold; transition: 0.2s; cursor: pointer;
             box-shadow: 0 2px 5px rgba(255,183,197,0.1);
+            margin: 2px;
         }
-        .timeline-btn:hover { background: #ffb7c5; color: white; transform: translateY(-2px); }
+        .timeline-btn:hover { background: #ffb7c5; color: white; }
         .genre-tag { font-size: 0.7rem; background: #fff0f3; color: #ff85a2; padding: 2px 8px; border-radius: 6px; }
 
         .date-selector-btn { padding: 8px 18px; border-radius: 999px; font-size: 0.9rem; border: 2px solid #ffb7c5; background: white; color: #ffb7c5; font-weight: bold; }
@@ -58,7 +57,7 @@
                     <option value="その他">💡 その他</option>
                 </select>
                 <input type="url" id="tweetUrl" placeholder="XポストURL" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none text-sm" required>
-                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md hover:opacity-90">登録！</button>
+                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md">登録！</button>
             </form>
         </section>
 
@@ -69,6 +68,7 @@
         <section id="viewCalendar" class="hidden">
             <div class="bg-white p-6 rounded-[30px] shadow-xl border-2 border-[#ffdeeb]">
                 <div id="dateSelector" class="flex justify-center gap-3 mb-8 flex-wrap"></div>
+                <div id="debugInfo" class="text-center text-xs text-gray-400 mb-4"></div>
                 <div id="calendarContainer" class="space-y-0"></div>
             </div>
         </section>
@@ -77,41 +77,46 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
-        
-        // 日本時間を取得 (YYYY-MM-DD)
-        function getJSTDate(offsetDays = 0) {
-            const now = new Date();
-            const jstNow = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
-            jstNow.setDate(jstNow.getDate() + offsetDays);
-            const y = jstNow.getFullYear();
-            const m = String(jstNow.getMonth() + 1).padStart(2, '0');
-            const d = String(jstNow.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+
+        // 日本時間をYYYY-MM-DDで取得
+        function getJSTDateStr(offset = 0) {
+            const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
+            d.setDate(d.getDate() + offset);
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        let selectedTimelineDate = getJSTDate(0);
+        let selectedTimelineDate = getJSTDateStr(0);
 
-        // データのゆらぎを吸収してクリーンアップする関数
-        function clean(item) {
-            const dStr = String(item.date || item.Date || "");
-            const tStr = String(item.time || item.Time || "");
+        // あらゆる形式のデータから情報を抜き出す
+        function parseItem(item) {
+            // プロパティ名が大文字小文字どっちでもいいようにする
+            const rawD = item.date || item.Date || "";
+            const rawT = item.time || item.Time || "";
             const name = item.name || item.Name || "不明";
             const genre = item.genre || item.Genre || "その他";
             const url = item.url || item.Url || "#";
 
-            // 日付抽出 (YYYY-MM-DD)
-            const dMatch = dStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            const date = dMatch ? `${dMatch[1]}-${dMatch[2].padStart(2, '0')}-${dMatch[3].padStart(2, '0')}` : dStr.split('T')[0].split(' ')[0];
+            // 日付: 2026-01-15 みたいなのを抜き出す
+            let d = "";
+            const dMatch = String(rawD).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (dMatch) {
+                d = `${dMatch[1]}-${dMatch[2].padStart(2, '0')}-${dMatch[3].padStart(2, '0')}`;
+            } else {
+                d = String(rawD).split('T')[0];
+            }
 
-            // 時刻抽出 (HH:mm)
-            const tMatch = tStr.match(/(\d{1,2}):(\d{1,2})/);
-            const time = tMatch ? `${tMatch[1].padStart(2, '0')}:${tMatch[2].padStart(2, '0')}` : "00:00";
+            // 時刻: 15:00 みたいなのを抜き出す
+            let t = "00:00";
+            const tMatch = String(rawT).match(/(\d{1,2}):(\d{1,2})/);
+            if (tMatch) {
+                t = `${tMatch[1].padStart(2, '0')}:${tMatch[2].padStart(2, '0')}`;
+            }
 
-            return { date, time, name, genre, url };
+            return { date: d, time: t, name, genre, url };
         }
 
         window.onload = () => {
-            document.getElementById('streamDate').value = getJSTDate(0);
+            document.getElementById('streamDate').value = getJSTDateStr(0);
             setupDateSelector();
             fetchSchedules();
         };
@@ -121,11 +126,15 @@
             selector.innerHTML = '';
             const labels = ["今日", "明日", "明後日"];
             for (let i = 0; i < 3; i++) {
-                const ds = getJSTDate(i);
+                const ds = getJSTDateStr(i);
                 const btn = document.createElement('button');
                 btn.className = `date-selector-btn ${ds === selectedTimelineDate ? 'active' : ''}`;
                 btn.innerText = `${labels[i]} (${ds.slice(5)})`;
-                btn.onclick = () => { selectedTimelineDate = ds; setupDateSelector(); renderAll(); };
+                btn.onclick = () => {
+                    selectedTimelineDate = ds;
+                    setupDateSelector();
+                    renderAll();
+                };
                 selector.appendChild(btn);
             }
         }
@@ -133,34 +142,34 @@
         async function fetchSchedules() {
             try {
                 const res = await fetch(GAS_URL);
-                const data = await res.json();
-                // 全てのデータを一度クリーンアップ
-                allSchedules = data.map(item => clean(item));
+                const json = await res.json();
+                allSchedules = json.map(i => parseItem(i));
                 renderAll();
-            } catch (e) { console.error("Fetch Error:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function renderAll() {
             const listEl = document.getElementById('upcomingList');
             const calEl = document.getElementById('calendarContainer');
+            const debugEl = document.getElementById('debugInfo');
             listEl.innerHTML = ''; calEl.innerHTML = '';
 
-            // タイムライン枠
+            // タイムラインの土台作成
             const boxes = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
-                row.className = 'flex border-b border-pink-50 min-h-[60px] items-center';
-                const hourLabel = String(i).padStart(2, '0');
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${hourLabel}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-3 px-4 py-2"></div>`;
+                row.className = 'flex border-b border-pink-50 min-h-[50px] items-center';
+                const hh = String(i).padStart(2, '0');
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center text-sm">${hh}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-4 py-1"></div>`;
                 calEl.appendChild(row);
                 boxes[i] = row.querySelector(`#h-box-${i}`);
             }
 
-            // ソート
-            allSchedules.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+            allSchedules.sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
+            let matchCount = 0;
             allSchedules.forEach(item => {
-                // 配信一覧
+                // 1. 配信一覧カード
                 const tweetId = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
                 card.className = 'tweet-card';
@@ -170,7 +179,7 @@
                             <span class="text-[#ff85a2] font-bold text-sm">⏰ ${item.date.slice(5)} ${item.time}</span>
                             <span class="text-gray-700 font-bold text-sm">| ${item.name}</span>
                         </div>
-                        <span class="text-[10px] bg-pink-50 text-[#ff85a2] px-2 py-0.5 rounded-full border border-pink-100">${item.genre}</span>
+                        <span class="genre-tag">${item.genre}</span>
                     </div>
                     <div class="tweet-wrapper">
                         <iframe class="tweet-iframe" src="https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=light"></iframe>
@@ -178,22 +187,24 @@
                 `;
                 listEl.appendChild(card);
 
-                // タイムラインへの流し込み（厳密比較）
+                // 2. タイムライン表示判定
+                // デバッグ用に、今探している日付とデータの持っている日付をログに出す
+                console.log(`Comparing: Target[${selectedTimelineDate}] with Data[${item.date}]`);
+
                 if (item.date === selectedTimelineDate) {
+                    matchCount++;
                     const h = parseInt(item.time.split(':')[0]);
                     if (boxes[h]) {
                         const btn = document.createElement('button');
                         btn.className = 'timeline-btn';
-                        btn.innerHTML = `
-                            <span class="text-xs font-normal text-gray-400">${item.time}</span>
-                            <span class="genre-tag">${item.genre}</span>
-                            <span>${item.name}</span>
-                        `;
+                        btn.innerHTML = `<span class="text-[10px] opacity-60">${item.time}</span> <span class="genre-tag">${item.genre}</span> <span>${item.name}</span>`;
                         btn.onclick = () => window.open(item.url, '_blank');
                         boxes[h].appendChild(btn);
                     }
                 }
             });
+
+            debugEl.innerText = `${selectedTimelineDate} の予定: ${matchCount}件見つかりました`;
         }
 
         function switchTab(tab) {
@@ -215,7 +226,7 @@
                 url: document.getElementById('tweetUrl').value
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
-            alert("登録依頼を送信しました！");
+            alert("登録しました！");
             e.target.reset();
             fetchSchedules();
             btn.disabled = false;
