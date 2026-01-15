@@ -3,98 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X表示テスト🎀</title>
+    <title>VTuber総合番組表🎀(Debug)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #f0f2f5; }
-        .nav-btn { cursor: pointer; padding: 10px 20px; border-radius: 999px; font-weight: bold; background: white; border: 2px solid #ddd; }
-        .nav-btn.active { background: #1da1f2; color: white; border-color: #1da1f2; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fff5f7; }
+        .pink-gradient { background: linear-gradient(135deg, #ffdeeb 0%, #ffb7c5 100%); }
+        .glass-morphism { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 2px solid #ffb7c5; }
+        .nav-btn { cursor: pointer; padding: 10px 16px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.85rem; }
+        .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-        .test-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .tweet-card { min-height: 400px; }
+        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="text-gray-700">
 
-    <header class="text-center mb-8">
-        <h1 class="text-2xl font-bold mb-6">🛠️ X（Twitter）表示デバッグモード</h1>
-        <div class="flex justify-center gap-4">
-            <button id="tabMain" class="nav-btn" onclick="switchTab('main')">✨ 配信一覧(GAS)</button>
-            <button id="tabTest" class="nav-btn active" onclick="switchTab('test')">🔍 X表示テスト</button>
-        </div>
-    </header>
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-[#ff85a2] drop-shadow-sm mb-4">🎀 VTuber総合番組表 🎀</h1>
+            <div class="flex flex-wrap justify-center gap-2 mb-6">
+                <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">✨ 配信一覧</button>
+                <button id="tabCalendar" class="nav-btn" onclick="switchTab('calendar')">📅 タイムライン</button>
+                <button id="tabTest" class="nav-btn" style="border-color: #1da1f2; color: #1da1f2;" onclick="switchTab('test')">🔍 X表示テスト</button>
+            </div>
+            
+            <div class="flex justify-center gap-2 overflow-x-auto pb-2">
+                <button onclick="filterGenre('すべて')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-100 shadow-sm">ALL</button>
+                <button onclick="filterGenre('雑談')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-100 shadow-sm">💬 雑談</button>
+                <button onclick="filterGenre('ゲーム')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-100 shadow-sm">🎮 ゲーム</button>
+                <button onclick="filterGenre('歌枠')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-100 shadow-sm">🎤 歌枠</button>
+                <button onclick="filterGenre('その他')" class="bg-white border px-4 py-1 rounded-full text-sm hover:bg-pink-100 shadow-sm">💡 その他</button>
+            </div>
+        </header>
 
-    <main id="viewMain" class="hidden">
-        <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-center text-gray-400">
-            GASからのデータ読み込み待ち...
-        </div>
-    </main>
+        <section class="glass-morphism p-6 rounded-3xl mb-10 shadow-md">
+            <form id="scheduleForm" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <input type="text" id="vtuberName" placeholder="名前" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                <input type="date" id="streamDate" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                <input type="time" id="startTime" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                <select id="genre" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none bg-white">
+                    <option value="雑談">💬 雑談</option>
+                    <option value="ゲーム">🎮 ゲーム</option>
+                    <option value="歌枠">🎤 歌枠</option>
+                    <option value="その他">💡 その他</option>
+                </select>
+                <input type="url" id="tweetUrl" placeholder="XポストURL" class="p-3 rounded-xl border-2 border-[#ffdeeb] outline-none" required>
+                <button type="submit" id="submitBtn" class="pink-gradient text-white font-bold py-3 rounded-xl shadow-md">登録！</button>
+            </form>
+        </section>
 
-    <section id="viewTest" class="max-w-2xl mx-auto">
-        <div class="test-card">
-            <h3 class="font-bold mb-4 text-blue-500">1. 指定されたURL（通常）</h3>
-            <blockquote class="twitter-tweet" data-dnt="true">
-                <a href="https://x.com/calro_shorts/status/2004852201714581550"></a>
-            </blockquote>
-        </div>
+        <main id="viewMain">
+            <div id="upcomingList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </main>
 
-        <div class="test-card">
-            <h3 class="font-bold mb-4 text-blue-500">2. 指定されたURL（パラメータ付き）</h3>
-            <blockquote class="twitter-tweet" data-dnt="true">
-                <a href="https://x.com/calro_shorts/status/2004852201714581550?s=20"></a>
-            </blockquote>
-        </div>
+        <section id="viewCalendar" class="hidden bg-white p-6 rounded-3xl shadow-lg border-2 border-[#ffdeeb]">
+            <div id="calendarContainer" class="space-y-2"></div>
+        </section>
 
-        <div class="test-card">
-            <h3 class="font-bold mb-4 text-green-500">3. 比較用（X公式ポスト）</h3>
-            <p class="text-xs mb-2">※1と2が消えていて、これが表示されるなら、URL（ID）が無効な可能性があります。</p>
-            <blockquote class="twitter-tweet" data-dnt="true">
-                <a href="https://x.com/X/status/1683498144214831104"></a>
-            </blockquote>
-        </div>
-    </section>
-
-    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+        <section id="viewTest" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl border-2 border-blue-400">
+                <h2 class="font-bold text-blue-500 mb-4 text-center">X埋め込みテストエリア</h2>
+                <div class="grid grid-cols-1 gap-4" id="testArea">
+                    <blockquote class="twitter-tweet" data-dnt="true"><a href="https://x.com/calro_shorts/status/2004852201714581550"></a></blockquote>
+                    <blockquote class="twitter-tweet" data-dnt="true"><a href="https://x.com/X/status/1683498144214831104"></a></blockquote>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
+        let allSchedules = [];
+        let currentGenre = "すべて";
 
-        // タブ切り替え
-        function switchTab(tab) {
-            document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
-            document.getElementById('viewTest').classList.toggle('hidden', tab !== 'test');
-            document.getElementById('tabMain').classList.toggle('active', tab === 'main');
-            document.getElementById('tabTest').classList.toggle('active', tab === 'test');
-            
-            // タブを切り替えた瞬間にXの再読み込みを命令する
-            if (window.twttr && twttr.widgets) {
-                twttr.widgets.load();
-            }
+        // Xのスクリプトを強制的に再注入する関数
+        function reloadXScript() {
+            // 既存のスクリプトがあれば削除
+            const oldScript = document.getElementById('twitter-wjs');
+            if (oldScript) oldScript.remove();
+
+            // 新しくスクリプトタグを作成
+            const script = document.createElement('script');
+            script.id = 'twitter-wjs';
+            script.src = 'https://platform.twitter.com/widgets.js';
+            script.async = true;
+            script.charset = 'utf-8';
+            document.body.appendChild(script);
+
+            // ロード後にウィジェットを実行
+            script.onload = () => {
+                if (window.twttr && twttr.widgets) {
+                    twttr.widgets.load();
+                }
+            };
         }
 
-        // GAS側のデータ取得（デバッグ用に残す）
+        window.addEventListener('load', async () => {
+            document.getElementById('streamDate').value = new Date().toISOString().split('T')[0];
+            await fetchSchedules();
+            reloadXScript(); // 初回読み込み
+        });
+
         async function fetchSchedules() {
             try {
                 const res = await fetch(GAS_URL);
-                const data = await res.json();
-                const listEl = document.getElementById('upcomingList');
-                listEl.innerHTML = '';
-                data.forEach(item => {
-                    listEl.innerHTML += `
-                        <div class="bg-white p-4 rounded-xl shadow">
-                            <p>${item.name} / ${item.time}</p>
-                            <blockquote class="twitter-tweet"><a href="${item.url}"></a></blockquote>
-                        </div>
-                    `;
-                });
-                if (window.twttr) twttr.widgets.load();
+                allSchedules = await res.json();
+                updateDisplays();
             } catch (e) { console.error(e); }
         }
 
-        // ページ読み込み時に実行
-        window.onload = () => {
-            fetchSchedules();
-        };
+        function updateDisplays() {
+            const listEl = document.getElementById('upcomingList');
+            const calEl = document.getElementById('calendarContainer');
+            if (!listEl || !calEl) return;
+
+            listEl.innerHTML = '';
+            calEl.innerHTML = '';
+
+            const hourMap = {};
+            for (let i = 0; i < 24; i++) {
+                const row = document.createElement('div');
+                row.className = 'flex border-b border-pink-50 min-h-[50px] items-start py-2';
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center">${i}:00</div><div id="hour-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
+                calEl.appendChild(row);
+                hourMap[i] = row.querySelector(`#hour-box-${i}`);
+            }
+
+            const filtered = allSchedules.filter(item => currentGenre === "すべて" || item.genre === currentGenre);
+            filtered.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+            filtered.forEach(item => {
+                const cleanTime = String(item.time).includes('T') ? String(item.time).split('T')[1].slice(0,5) : String(item.time).slice(0,5);
+                const cleanDate = String(item.date).split('T')[0];
+
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-3xl shadow-sm border border-pink-100 flex flex-col tweet-card';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <span class="text-lg font-bold text-[#ff85a2]">⏰ ${cleanDate.slice(5)} ${cleanTime}</span>
+                        <span class="text-xs bg-pink-100 text-[#ff85a2] px-2 py-1 rounded-full">${item.genre}</span>
+                    </div>
+                    <div class="text-sm font-bold text-gray-400 mb-2 px-2">${item.name} さん</div>
+                    <div class="flex-1"><blockquote class="twitter-tweet" data-dnt="true"><a href="${item.url}"></a></blockquote></div>
+                `;
+                listEl.appendChild(card);
+
+                const today = new Date().toISOString().split('T')[0];
+                if (cleanDate === today) {
+                    const h = parseInt(cleanTime.split(':')[0]);
+                    if (hourMap[h]) hourMap[h].innerHTML += `<div class="timeline-chip">${cleanTime} | ${item.name}</div>`;
+                }
+            });
+
+            if (window.twttr && twttr.widgets) twttr.widgets.load();
+        }
+
+        function switchTab(tab) {
+            document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
+            document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
+            document.getElementById('viewTest').classList.toggle('hidden', tab !== 'test');
+            
+            document.getElementById('tabMain').classList.toggle('active', tab === 'main');
+            document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
+            document.getElementById('tabTest').classList.toggle('active', tab === 'test');
+            
+            reloadXScript(); // タブ切り替え時にスクリプトを再注入
+        }
+
+        // フォーム送信
+        document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            const newData = {
+                name: document.getElementById('vtuberName').value,
+                date: document.getElementById('streamDate').value,
+                time: document.getElementById('startTime').value,
+                genre: document.getElementById('genre').value,
+                url: document.getElementById('tweetUrl').value
+            };
+            try {
+                await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(newData) });
+                this.reset();
+                alert("送信しました！");
+                setTimeout(fetchSchedules, 2000);
+            } catch (err) { alert("エラー"); }
+            finally { btn.disabled = false; }
+        });
+
+        function filterGenre(genre) {
+            currentGenre = genre;
+            updateDisplays();
+            reloadXScript();
+        }
     </script>
 </body>
 </html>
