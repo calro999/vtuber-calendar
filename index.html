@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VTuber総合番組表🎀(Debug)</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
+    
+    <title>VTuber総合番組表🎀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -13,8 +15,8 @@
         .nav-btn { cursor: pointer; padding: 10px 16px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.85rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .hidden { display: none; }
-        .tweet-card { min-height: 400px; }
-        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .tweet-card { min-height: 450px; }
+        .timeline-chip { background-color: #fff5f7; border: 1px solid #ffb7c5; color: #ff85a2; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
     </style>
 </head>
 <body class="text-gray-700">
@@ -72,37 +74,16 @@
         </section>
     </div>
 
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec"; 
         let allSchedules = [];
         let currentGenre = "すべて";
 
-        // Xのスクリプトを強制的に再注入する関数
-        function reloadXScript() {
-            // 既存のスクリプトがあれば削除
-            const oldScript = document.getElementById('twitter-wjs');
-            if (oldScript) oldScript.remove();
-
-            // 新しくスクリプトタグを作成
-            const script = document.createElement('script');
-            script.id = 'twitter-wjs';
-            script.src = 'https://platform.twitter.com/widgets.js';
-            script.async = true;
-            script.charset = 'utf-8';
-            document.body.appendChild(script);
-
-            // ロード後にウィジェットを実行
-            script.onload = () => {
-                if (window.twttr && twttr.widgets) {
-                    twttr.widgets.load();
-                }
-            };
-        }
-
         window.addEventListener('load', async () => {
             document.getElementById('streamDate').value = new Date().toISOString().split('T')[0];
             await fetchSchedules();
-            reloadXScript(); // 初回読み込み
         });
 
         async function fetchSchedules() {
@@ -110,7 +91,7 @@
                 const res = await fetch(GAS_URL);
                 allSchedules = await res.json();
                 updateDisplays();
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Data Fetch Error:", e); }
         }
 
         function updateDisplays() {
@@ -121,13 +102,14 @@
             listEl.innerHTML = '';
             calEl.innerHTML = '';
 
-            const hourMap = {};
+            // タイムラインの土台作成
+            const hourBoxRefs = {};
             for (let i = 0; i < 24; i++) {
                 const row = document.createElement('div');
                 row.className = 'flex border-b border-pink-50 min-h-[50px] items-start py-2';
-                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center">${i}:00</div><div id="hour-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
+                row.innerHTML = `<div class="w-16 font-bold text-[#ffb7c5] text-center">${i}:00</div><div id="h-box-${i}" class="flex-1 flex flex-wrap gap-2 px-2"></div>`;
                 calEl.appendChild(row);
-                hourMap[i] = row.querySelector(`#hour-box-${i}`);
+                hourBoxRefs[i] = row.querySelector(`#h-box-${i}`);
             }
 
             const filtered = allSchedules.filter(item => currentGenre === "すべて" || item.genre === currentGenre);
@@ -152,7 +134,9 @@
                 const today = new Date().toISOString().split('T')[0];
                 if (cleanDate === today) {
                     const h = parseInt(cleanTime.split(':')[0]);
-                    if (hourMap[h]) hourMap[h].innerHTML += `<div class="timeline-chip">${cleanTime} | ${item.name}</div>`;
+                    if (hourBoxRefs[h]) {
+                        hourBoxRefs[h].innerHTML += `<div class="timeline-chip">${cleanTime} | ${item.name}</div>`;
+                    }
                 }
             });
 
@@ -163,15 +147,12 @@
             document.getElementById('viewMain').classList.toggle('hidden', tab !== 'main');
             document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
             document.getElementById('viewTest').classList.toggle('hidden', tab !== 'test');
-            
             document.getElementById('tabMain').classList.toggle('active', tab === 'main');
             document.getElementById('tabCalendar').classList.toggle('active', tab === 'calendar');
             document.getElementById('tabTest').classList.toggle('active', tab === 'test');
-            
-            reloadXScript(); // タブ切り替え時にスクリプトを再注入
+            if (window.twttr && twttr.widgets) twttr.widgets.load();
         }
 
-        // フォーム送信
         document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -195,7 +176,6 @@
         function filterGenre(genre) {
             currentGenre = genre;
             updateDisplays();
-            reloadXScript();
         }
     </script>
 </body>
