@@ -6,204 +6,193 @@
     <title>皆で作るV図鑑！</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     <style>
-        :root { --v-pink: #ff85a2; --v-blue: #3ab0ff; --v-orange: #ff9f1c; --v-purple: #9d4edd; }
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fdf2f4; color: #333; }
+        :root { --v-pink: #ff85a2; --v-blue: #0095ff; --v-orange: #ff9900; --v-purple: #a855f7; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fff5f7; color: #333; }
         
-        /* タブメニュー：より洗練された形へ */
-        .nav-bar { background: white; border-radius: 50px; box-shadow: 0 4px 15px rgba(255,133,162,0.1); padding: 5px; display: flex; gap: 5px; }
-        .nav-btn { flex: 1; padding: 10px 5px; border-radius: 40px; font-size: 0.85rem; font-weight: bold; color: #aaa; transition: 0.3s; text-align: center; cursor: pointer; }
+        /* 最上部：登録エリア */
+        .add-area { background: white; border-bottom: 3px solid var(--v-pink); padding: 12px; }
+        .add-btn { flex: 1; padding: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; color: white; transition: 0.2s; text-align: center; }
+
+        /* ナビゲーション */
+        .nav-bar { display: flex; gap: 8px; padding: 10px; overflow-x: auto; }
+        .nav-btn { flex-shrink: 0; padding: 8px 16px; border-radius: 999px; font-size: 0.85rem; font-weight: bold; color: var(--v-pink); background: white; border: 2px solid var(--v-pink); }
         .nav-btn.active { background: var(--v-pink); color: white; }
 
-        /* 配信リスト：一目でわかる色分け */
-        .list-card { background: white; border-radius: 18px; margin-bottom: 12px; overflow: hidden; border-left: 8px solid; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .cat-雑談 { border-color: var(--v-blue); }
-        .cat-ゲーム { border-color: var(--v-orange); }
-        .cat-歌枠 { border-color: var(--v-pink); }
-        .cat-その他 { border-color: var(--v-purple); }
+        /* 配信カード：ポストが見えるサイズ */
+        .stream-card { background: white; border-radius: 20px; overflow: hidden; border: 2px solid #ffdeeb; height: 440px; display: flex; flex-direction: column; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card-header { padding: 10px; color: white; font-weight: bold; text-align: center; font-size: 0.9rem; }
+        .iframe-container { flex: 1; overflow-y: auto; background: white; }
+        .iframe-container iframe { width: 100%; height: 550px; transform: scale(0.95); transform-origin: top center; border: none; }
+        .x-btn { padding: 12px; text-align: center; color: white; font-weight: bold; font-size: 0.85rem; }
 
-        /* スワイプUI：Tinder風アニメーション復活 */
-        #ohvContainer { perspective: 1000px; height: 500px; width: 100%; max-width: 360px; position: relative; }
-        .v-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.4s ease, opacity 0.4s; overflow: hidden; cursor: grab; }
-        .v-card:active { cursor: grabbing; }
+        /* おはVスワイプ：大きく見やすく */
+        #ohvStack { position: relative; height: 480px; width: 100%; max-width: 350px; margin: 10px auto; }
+        .v-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 24px; border: 2px solid #ffdeeb; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.4s, opacity 0.4s; overflow: hidden; }
+        .v-card-cover { position: absolute; inset: 0; z-index: 10; }
 
-        /* 応援ボタンUI：常時表示ではなく、おはVページのみ */
-        .cheer-tray { display: flex; gap: 8px; overflow-x: auto; padding: 15px; background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); border-radius: 20px; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); margin-top: 20px; }
-        .tag-chip { background: white; border: 2px solid var(--v-pink); color: var(--v-pink); padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; }
+        /* 評価パネル：被らないように調整 */
+        .cheer-tray { display: flex; gap: 8px; overflow-x: auto; padding: 15px; background: white; border-top: 4px solid var(--v-pink); position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; border-radius: 24px 24px 0 0; transform: translateY(100%); transition: 0.3s; }
+        .cheer-tray.open { transform: translateY(0); }
+        .tag-chip { flex-shrink: 0; padding: 10px 18px; border-radius: 15px; border: 2px solid var(--v-pink); color: var(--v-pink); font-size: 0.8rem; font-weight: bold; }
 
-        /* 全V図鑑：グリッド */
-        .zukan-item { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        
+        /* 図鑑：2段収まるように */
+        .zukan-grid { display: grid; grid-cols: 2; gap: 10px; }
+        .zukan-card { background: white; border-radius: 15px; border: 1px solid #ffdeeb; height: 320px; display: flex; flex-direction: column; overflow: hidden; }
+
         .hidden { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* カテゴリ色 */
+        .cat-雑談 { background-color: var(--v-blue); }
+        .cat-ゲーム { background-color: var(--v-orange); }
+        .cat-歌枠 { background-color: var(--v-pink); }
+        .cat-その他 { background-color: var(--v-purple); }
     </style>
 </head>
-<body class="pb-10">
-    <div class="max-w-md mx-auto px-4 pt-6">
-        <header class="mb-6">
-            <h1 class="text-2xl font-black text-center text-[#ff85a2] mb-6">皆で作るV図鑑！</h1>
-            <nav class="nav-bar">
-                <div id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</div>
-                <div id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">時間割</div>
-                <div id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</div>
-                <div id="tabZukan" class="nav-btn" onclick="switchTab('zukan')">図鑑</div>
+<body>
+
+    <div class="add-area flex gap-2">
+        <button onclick="showForm('stream')" class="add-btn bg-blue-500">＋ 配信予定を追加</button>
+        <button onclick="showForm('ohv')" class="add-btn bg-orange-500">＋ おはVを追加</button>
+    </div>
+
+    <div id="modalForm" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 relative">
+            <button onclick="hideForm()" class="absolute top-4 right-4 text-gray-400 font-bold text-xl">✕</button>
+            <h2 id="formTitle" class="font-bold text-pink-500 mb-4">配信予定を登録</h2>
+            <form id="vForm" class="grid gap-3">
+                <input type="text" id="inputName" placeholder="配信者名" class="p-3 border-2 rounded-xl outline-none" required>
+                <input type="url" id="inputUrl" placeholder="X（旧Twitter）ポストのURL" class="p-3 border-2 rounded-xl outline-none" required>
+                <div id="streamFields" class="grid grid-cols-2 gap-2">
+                    <input type="date" id="inputDate" class="p-3 border-2 rounded-xl outline-none">
+                    <input type="time" id="inputTime" class="p-3 border-2 rounded-xl outline-none">
+                    <select id="inputGenre" class="col-span-2 p-3 border-2 rounded-xl outline-none">
+                        <option value="雑談">💬 雑談</option>
+                        <option value="ゲーム">🎮 ゲーム</option>
+                        <option value="歌枠">🎤 歌枠</option>
+                        <option value="その他">💡 その他</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-pink-500 text-white font-bold py-3 rounded-xl mt-2">登録する</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto">
+        <header class="pt-4">
+            <nav class="nav-bar no-scrollbar">
+                <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</button>
+                <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">時間割</button>
+                <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</button>
+                <button id="tabZukan" class="nav-btn" onclick="switchTab('zukan')">皆で作るV図鑑</button>
             </nav>
         </header>
 
-        <div id="viewMain">
+        <main id="viewMain" class="p-3">
             <div id="streamList"></div>
-        </div>
+        </main>
 
-        <div id="viewTimeline" class="hidden">
-            <div id="timelineContainer" class="bg-white rounded-3xl p-4 shadow-inner"></div>
-        </div>
+        <section id="viewTimeline" class="hidden p-3">
+            <div id="timelineList" class="bg-white rounded-3xl p-4 shadow-sm border border-pink-100"></div>
+        </section>
 
-        <div id="viewOhv" class="hidden flex flex-col items-center">
-            <div id="ohvContainer"></div>
-            <p class="text-[10px] text-gray-400 mt-4">← 興味なし | 応援（評価）はボタンから →</p>
-            <div class="cheer-tray no-scrollbar" id="cheerTray">
-                <button class="tag-chip" onclick="cheerV('カワボ')">カワボ 🎀</button>
-                <button class="tag-chip" onclick="cheerV('イケボ')">イケボ ✨</button>
-                <button class="tag-chip" onclick="cheerV('ロリボ')">ロリボ 🍼</button>
-                <button class="tag-chip" onclick="cheerV('お姉さん')">お姉さん 👠</button>
-                <button class="tag-chip" onclick="cheerV('賑やか')">賑やか ⚡️</button>
-                <button class="tag-chip" onclick="cheerV('癒やし')">癒やし 🌙</button>
-            </div>
-        </div>
+        <section id="viewOhv" class="hidden flex flex-col items-center">
+            <div id="ohvStack"></div>
+            <p class="text-[10px] text-gray-400 mt-2">タップでXを開く / スワイプで次へ</p>
+        </section>
 
-        <div id="viewZukan" class="hidden">
+        <section id="viewZukan" class="hidden p-3">
             <div id="zukanList" class="grid grid-cols-2 gap-3"></div>
-        </div>
+        </section>
+    </div>
 
-        <div class="mt-10 p-4 bg-white rounded-2xl border-2 border-pink-100">
-            <p class="text-xs font-bold text-pink-400 mb-2">＋ 情報を追加する</p>
-            <div class="flex gap-2">
-                <button onclick="showForm('stream')" class="bg-blue-400 text-white text-[10px] px-3 py-2 rounded-lg font-bold">配信予定</button>
-                <button onclick="showForm('ohv')" class="bg-orange-400 text-white text-[10px] px-3 py-2 rounded-lg font-bold">おはV</button>
-            </div>
-            <div id="formContainer" class="mt-4 hidden border-t pt-4">
-                <form id="vForm" class="grid gap-2">
-                    <input type="text" id="inputName" placeholder="名前" class="text-xs p-2 border rounded-lg">
-                    <input type="url" id="inputUrl" placeholder="XのポストURL" class="text-xs p-2 border rounded-lg">
-                    <div id="streamExtra" class="hidden grid grid-cols-2 gap-2">
-                        <input type="date" id="inputDate" class="text-xs p-2 border rounded-lg">
-                        <input type="time" id="inputTime" class="text-xs p-2 border rounded-lg">
-                        <select id="inputGenre" class="text-xs p-2 border rounded-lg col-span-2">
-                            <option value="雑談">雑談</option><option value="ゲーム">ゲーム</option><option value="歌枠">歌枠</option><option value="その他">その他</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="bg-pink-400 text-white py-2 rounded-lg font-bold text-xs">登録完了</button>
-                </form>
-            </div>
-        </div>
+    <div id="cheerTray" class="cheer-tray no-scrollbar">
+        <button class="tag-chip" onclick="cheerV('カワボ')">カワボ 🎀</button>
+        <button class="tag-chip" onclick="cheerV('イケボ')">イケボ ✨</button>
+        <button class="tag-chip" onclick="cheerV('お姉さん')">お姉さん 💄</button>
+        <button class="tag-chip" onclick="cheerV('ハスキー')">ハスキー 🎙️</button>
+        <button class="tag-chip" onclick="cheerV('落ち着いた')">落ち着いた ☕️</button>
+        <button class="tag-chip" onclick="cheerV('賑やか')">賑やか ⚡️</button>
+        <button class="tag-chip" onclick="cancelV()">パス 💨</button>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec";
         let allData = [];
         let ohvQueue = [];
-        let currentType = 'stream';
+        let currentSubmitType = 'stream';
 
         async function fetchData() {
             const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
             allData = await res.json();
             renderAll();
+            if(window.twttr) twttr.widgets.load();
         }
 
         function renderAll() {
-            renderMain();
-            renderTimeline();
-            renderOhv();
-            renderZukan();
-        }
-
-        function renderMain() {
-            const list = document.getElementById('streamList');
             const today = new Date().toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'}).replace(/\//g, '-');
-            const items = allData.filter(d => d.type === '配信' && d.date.replace(/\//g, '-') === today);
             
-            list.innerHTML = items.length ? "" : "<p class='text-center py-10 text-gray-400 text-xs'>本日の配信予定はありません</p>";
-            items.sort((a,b) => a.time.localeCompare(b.time)).forEach(d => {
+            // 1. 配信一覧
+            const streams = allData.filter(d => d.type === '配信' && d.date.replace(/\//g, '-') === today).sort((a,b) => a.time.localeCompare(b.time));
+            const list = document.getElementById('streamList');
+            list.innerHTML = streams.length ? "" : "<p class='text-center py-20 text-gray-400'>本日の配信予定はありません</p>";
+            streams.forEach(d => {
                 const tid = d.url.split('/status/')[1]?.split('?')[0];
                 list.innerHTML += `
-                    <div class="list-card cat-${d.genre}">
-                        <div class="p-3 flex justify-between items-center">
-                            <div>
-                                <span class="text-xs font-black text-gray-400">${d.time}</span>
-                                <span class="ml-2 font-bold text-sm">${d.name}</span>
-                            </div>
-                            <span class="text-[10px] px-2 py-1 rounded-full bg-gray-100 font-bold">${d.genre}</span>
-                        </div>
-                        <div class="px-3 pb-3">
-                            <button onclick="window.open('${d.url}')" class="w-full bg-gray-50 text-[10px] py-2 rounded-lg text-gray-500 font-bold">告知ポストを見る</button>
-                        </div>
+                    <div class="stream-card">
+                        <div class="card-header cat-${d.genre}">${d.time} | ${d.name}</div>
+                        <div class="iframe-container"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
+                        <a href="${d.url}" target="_blank" class="x-btn cat-${d.genre}">告知ポストをXで開く</a>
                     </div>`;
             });
-        }
 
-        function renderTimeline() {
-            const container = document.getElementById('timelineContainer');
-            container.innerHTML = "";
-            const today = new Date().toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'}).replace(/\//g, '-');
-            const items = allData.filter(d => d.type === '配信' && d.date.replace(/\//g, '-') === today);
-
+            // 2. 時間割
+            const timeline = document.getElementById('timelineList');
+            timeline.innerHTML = "";
             for(let h=0; h<24; h++) {
-                const hourItems = items.filter(d => parseInt(d.time.split(':')[0]) === h);
-                container.innerHTML += `
-                    <div class="flex items-start mb-4">
-                        <div class="w-12 text-center text-[10px] font-bold text-pink-300 mt-1">${h}:00</div>
+                const hourItems = streams.filter(d => parseInt(d.time.split(':')[0]) === h);
+                timeline.innerHTML += `
+                    <div class="flex items-start mb-4 border-b border-pink-50 pb-2">
+                        <div class="w-12 font-bold text-pink-300 text-sm">${h}:00</div>
                         <div class="flex-1 flex flex-wrap gap-2">
-                            ${hourItems.length ? hourItems.map(i => `<div onclick="window.open('${i.url}')" class="bg-white border-2 border-pink-100 text-[10px] px-3 py-1 rounded-full font-bold">${i.name}</div>`).join('') : '<div class="h-4 w-full border-b border-dashed border-pink-50"></div>'}
+                            ${hourItems.map(i => `<button onclick="window.open('${i.url}')" class="text-[11px] font-bold px-3 py-1 rounded-full text-white cat-${i.genre}">${i.name}</button>`).join('') || '<span class="text-gray-200 text-xs">---</span>'}
                         </div>
                     </div>`;
             }
-        }
 
-        function renderOhv() {
-            const container = document.getElementById('ohvContainer');
+            // 3. おはV
+            const stack = document.getElementById('ohvStack');
             ohvQueue = allData.filter(d => d.type === 'おはV' && !d.voice).reverse();
-            container.innerHTML = ohvQueue.length ? "" : "<p class='text-center mt-20 text-gray-400'>評価待ちのポストはありません</p>";
-            
+            stack.innerHTML = ohvQueue.length ? "" : "<p class='text-center py-20 text-gray-400'>新しいおはVはありません ✨</p>";
             ohvQueue.forEach((d, i) => {
                 const tid = d.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
-                card.className = "v-card p-4";
+                card.className = "v-card";
                 card.style.zIndex = 100 - i;
                 card.innerHTML = `
-                    <div class="text-center font-bold text-pink-400 mb-2">${d.name}</div>
-                    <div class="h-[80%] overflow-hidden rounded-xl border">
-                        <iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" width="100%" height="100%" frameborder="0"></iframe>
-                    </div>`;
-                
-                // 簡易スワイプ（左に飛ばす機能）
-                card.onclick = (e) => {
-                    if(e.offsetX < 100) { card.style.transform = "translateX(-150%) rotate(-20deg)"; setTimeout(()=>card.remove(), 400); }
-                };
-                container.appendChild(card);
+                    <div class="p-3 text-center font-bold text-orange-500 border-b">${d.name}</div>
+                    <div class="iframe-container"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
+                    <div class="v-card-cover" onclick="window.open('${d.url}')"></div>`;
+                stack.appendChild(card);
             });
-        }
 
-        async function cheerV(tag) {
-            const target = ohvQueue[0];
-            if(!target) return;
-            const card = document.querySelector('.v-card:last-child');
-            card.style.transform = "translateX(150%) rotate(20deg)";
-            setTimeout(()=>card.remove(), 400);
-            ohvQueue.shift();
-
-            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "rate", url: target.url, voice: tag, atm: "応援" }) });
-        }
-
-        function renderZukan() {
-            const list = document.getElementById('zukanList');
+            // 4. 図鑑
+            const zukan = document.getElementById('zukanList');
             const rated = allData.filter(d => d.type === 'おはV' && d.voice);
-            list.innerHTML = rated.map(d => `
-                <div class="zukan-item p-2" onclick="window.open('${d.url}')">
-                    <div class="text-[10px] font-bold text-gray-400 truncate">${d.name}</div>
-                    <div class="bg-pink-50 text-[9px] text-pink-500 px-2 py-1 rounded-full inline-block mt-1">#${d.voice}</div>
-                    <div class="bg-blue-50 text-[9px] text-blue-500 px-2 py-1 rounded-full inline-block mt-1">#${d.atm}</div>
-                </div>
-            `).join('');
+            zukan.innerHTML = rated.map(d => {
+                const tid = d.url.split('/status/')[1]?.split('?')[0];
+                return `
+                    <div class="zukan-card">
+                        <div class="p-2 text-center text-[10px] font-bold text-pink-500 truncate border-b">${d.name}</div>
+                        <div class="iframe-container pointer-events-none"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
+                        <div class="p-2 flex gap-1 flex-wrap">
+                            <span class="text-[8px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full font-bold">#${d.voice}</span>
+                            <span class="text-[8px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">#${d.atm}</span>
+                        </div>
+                    </div>`;
+            }).join('');
         }
 
         function switchTab(t) {
@@ -211,18 +200,38 @@
             document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
+            document.getElementById('cheerTray').classList.toggle('open', t === 'ohv' && ohvQueue.length > 0);
+        }
+
+        async function cheerV(tag) {
+            const target = ohvQueue[0];
+            const card = document.querySelector('.v-card:last-child');
+            if(card) { card.style.transform = "translateX(150%) rotate(20deg)"; card.style.opacity = "0"; setTimeout(()=>card.remove(), 400); }
+            ohvQueue.shift();
+            if(ohvQueue.length === 0) document.getElementById('cheerTray').classList.remove('open');
+            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "rate", url: target.url, voice: tag, atm: "応援" }) });
+            fetchData();
+        }
+
+        function cancelV() {
+            const card = document.querySelector('.v-card:last-child');
+            if(card) { card.style.transform = "translateX(-150%) rotate(-20deg)"; card.style.opacity = "0"; setTimeout(()=>card.remove(), 400); }
+            ohvQueue.shift();
+            if(ohvQueue.length === 0) document.getElementById('cheerTray').classList.remove('open');
         }
 
         function showForm(type) {
-            currentType = type;
-            document.getElementById('formContainer').classList.remove('hidden');
-            document.getElementById('streamExtra').classList.toggle('hidden', type !== 'stream');
+            currentSubmitType = type;
+            document.getElementById('modalForm').classList.remove('hidden');
+            document.getElementById('formTitle').innerText = type === 'stream' ? '配信予定を登録' : 'おはVを登録';
+            document.getElementById('streamFields').classList.toggle('hidden', type === 'ohv');
         }
+        function hideForm() { document.getElementById('modalForm').classList.add('hidden'); }
 
         document.getElementById('vForm').onsubmit = async (e) => {
             e.preventDefault();
             const data = {
-                type: currentType === 'stream' ? '配信' : 'おはV',
+                type: currentSubmitType === 'stream' ? '配信' : 'おはV',
                 name: document.getElementById('inputName').value,
                 url: document.getElementById('inputUrl').value,
                 date: document.getElementById('inputDate').value || "",
@@ -230,7 +239,8 @@
                 genre: document.getElementById('inputGenre').value || ""
             };
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(data) });
-            alert("登録しました！");
+            alert("登録完了！");
+            hideForm();
             fetchData();
         }
 
