@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="logo.png">
 
     <title>皆で作るV図鑑！ | 最新VTuber配信スケジュール＆属性検索</title>
-    <meta name="description" content="VTuberの配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
+    <meta name="description" content="VTuberの配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です.">
     <meta name="keywords" content="VTuber, 配信予定, おはV, 予定表, タイムライン, VTuber図鑑, AI検索">
     
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
@@ -90,6 +90,17 @@
         .v-stats-label { font-weight: bold; color: #f3a3b9; width: 30%; }
         .v-quote { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; font-style: italic; position: relative; border-left: 5px solid #ffb7ce; }
         .v-footer-info { text-align: right; font-size: 0.8em; margin-top: 10px; color: #ffb7ce; }
+        
+        /* 案内人画像スタイル */
+        .v-guide-image {
+            width: 100%;
+            max-width: 450px;
+            margin: 15px auto;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(255, 183, 206, 0.3);
+            display: block;
+            border: 2px solid #fff;
+        }
 
         .hidden { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -112,7 +123,7 @@
             <div id="formStream" class="hidden">
                 <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-7 gap-1.5 text-xs font-bold">
                     <input type="text" id="vName" placeholder="名前" class="p-2 border rounded-lg outline-none">
-                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-r-lg"></select></div>
+                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-l-lg"></select></div>
                     <input type="time" id="startTime" class="p-2 border rounded-lg">
                     <select id="genre" class="p-2 border rounded-lg"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
                     <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 p-2 border rounded-lg">
@@ -167,6 +178,7 @@
                     #皆で作るV図鑑 公式ナビゲーター
                 </div>
             </div>
+            <img src="memoru.png" alt="綴メモル" class="v-guide-image">
         </section>
     </div>
 
