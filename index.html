@@ -50,10 +50,10 @@
         .stream-iframe-wrap { flex: 1; overflow-y: auto; background: #fff; -webkit-overflow-scrolling: touch; }
         .stream-iframe-wrap iframe { width: 100%; height: 500px; transform: scale(0.9); transform-origin: top center; border: none; }
 
-        #ohvStack { position: relative; height: 380px; width: 100%; max-width: 320px; margin: 0 auto; }
+        #ohvStack { position: relative; height: 380px; width: 100%; max-width: 320px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
         .swipe-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 20px; border: 1px solid #ffdeeb; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
         .card-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
-        .swiped-right { transform: translateX(150%) rotate(30deg); opacity: 0; }
+        .swiped-right { transform: translateX(150%) rotate(30deg); opacity: 0; pointer-events: none; }
 
         #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); border-top: 3px solid var(--main-pink); padding: 12px 12px 24px 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; border-radius: 24px 24px 0 0; }
         #tagTray.open { transform: translateY(0); }
@@ -320,17 +320,28 @@
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = ""; currentCardIndex = 0;
             const today = getJSTToday(0);
-            // 登録日が今日（today）と一致するものだけをスタックに表示
             const ohvs = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today).reverse();
             
-            if(ohvs.length === 0) {
-                stack.innerHTML = "<p class='text-center py-20 text-gray-400 text-xs'>本日のおはVはまだありません ✨</p>";
+            // 全てスワイプ済み、または最初から0件の場合
+            const swipedIndices = JSON.parse(sessionStorage.getItem('swiped_ohvs') || '[]');
+            const activeOhvs = ohvs.filter((_, idx) => !swipedIndices.includes(idx));
+
+            if(ohvs.length === 0 || activeOhvs.length === 0) {
+                stack.innerHTML = `
+                    <div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200">
+                        <p class="text-3xl mb-2">☁️</p>
+                        <p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p>
+                        <p class="text-[10px] text-gray-400 mt-1">みんなでVを応援しよう！✨</p>
+                    </div>`;
+                updateTray();
                 return;
             }
+
             ohvs.forEach((item, idx) => {
+                const isSwiped = swipedIndices.includes(idx);
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
-                card.className = "swipe-card";
+                card.className = `swipe-card ${isSwiped ? 'swiped-right' : ''}`;
                 card.style.zIndex = 100 - idx;
                 card.innerHTML = `<div class="p-2 text-center font-bold text-xs border-b text-orange-400">☀️ ${item.name || 'VTuber'}</div><div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div><div class="card-cover" onclick="window.open('${item.url}')"></div>`;
                 stack.appendChild(card);
@@ -341,19 +352,26 @@
         function renderFilterButtons() {
             const bar = document.getElementById('filterBar');
             bar.innerHTML = `<button class="nav-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="filterZukan('all')">全員見る</button>`;
-            ALL_TAGS.forEach(tag => { bar.innerHTML += `<button class="nav-btn ${currentFilter === tag ? 'active' : ''}" onclick="filterZukan('${tag}')">${tag}</button>`; });
+            ALL_TAGS.forEach(tag => { 
+                bar.innerHTML += `<button class="nav-btn ${currentFilter === tag ? 'active' : ''}" onclick="filterZukan('${tag}')">${tag}</button>`; 
+            });
         }
 
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
-            const rated = allData.filter(i => i.voice && i.voice.length > 0);
-            const filtered = currentFilter === 'all' ? rated : rated.filter(i => i.voice === currentFilter || i.atm === currentFilter);
+            const rated = allData.filter(i => i.voice && String(i.voice).trim() !== "");
+            const filtered = currentFilter === 'all' ? rated : rated.filter(i => String(i.voice).includes(currentFilter) || String(i.atm).includes(currentFilter));
+
+            if(filtered.length === 0) {
+                list.innerHTML = "<p class='col-span-full text-center py-10 text-gray-400 text-xs'>まだこのタグの評価はありません ✨</p>";
+                return;
+            }
 
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const div = document.createElement('article');
-                div.className = "zukan-card shadow-sm";
+                div.className = "zukan-card shadow-sm cursor-pointer";
                 div.innerHTML = `
                     <h3 class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</h3>
                     <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
@@ -382,8 +400,8 @@
 
         function updateTray() {
             const tray = document.getElementById('tagTray');
-            const stackCount = document.querySelectorAll('.swipe-card:not(.swiped-right)').length;
-            if(!document.getElementById('viewOhv').classList.contains('hidden') && stackCount > 0) tray.classList.add('open');
+            const visibleCards = document.querySelectorAll('.swipe-card:not(.swiped-right)');
+            if(!document.getElementById('viewOhv').classList.contains('hidden') && visibleCards.length > 0) tray.classList.add('open');
             else tray.classList.remove('open');
         }
 
@@ -399,6 +417,7 @@
             const target = ohvs[currentCardIndex];
             
             if (target) {
+                saveSwiped(currentCardIndex);
                 nextCard(); 
                 resetTray();
                 await fetch(GAS_URL, { 
@@ -410,22 +429,29 @@
             }
         }
 
-        // スキップボタン：評価せずに即座にカードをスワイプして次を表示
         function cancelAuth() { 
+            saveSwiped(currentCardIndex);
             resetTray(); 
             nextCard(); 
+        }
+
+        function saveSwiped(idx) {
+            const swiped = JSON.parse(sessionStorage.getItem('swiped_ohvs') || '[]');
+            swiped.push(idx);
+            sessionStorage.setItem('swiped_ohvs', JSON.stringify(swiped));
         }
 
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
         
         function nextCard() {
-            const cards = document.querySelectorAll('.swipe-card');
-            if(cards[currentCardIndex]) { 
-                cards[currentCardIndex].classList.add('swiped-right'); 
-                currentCardIndex++; 
-                updateTray(); 
-            } else { 
-                alert("今日のおはVはここまでです！ 🎀"); 
+            const cards = document.querySelectorAll('.swipe-card:not(.swiped-right)');
+            if(cards.length > 0) { 
+                cards[0].classList.add('swiped-right'); 
+                currentCardIndex++;
+                setTimeout(() => {
+                    if(document.querySelectorAll('.swipe-card:not(.swiped-right)').length === 0) renderStack();
+                    updateTray();
+                }, 400);
             }
         }
 
