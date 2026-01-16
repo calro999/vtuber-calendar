@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="logo.png">
+
     <title>皆で作るV図鑑！ | 最新VTuber配信スケジュール＆属性検索</title>
-    <meta name="description" content="VTuberの配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
+    <meta name="description" content="VTuber의 配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
     <meta name="keywords" content="VTuber, 配信予定, おはV, 予定表, タイムライン, VTuber図鑑, AI検索">
     
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
@@ -84,7 +87,7 @@
             <div id="formStream" class="hidden">
                 <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-7 gap-1.5 text-xs font-bold">
                     <input type="text" id="vName" placeholder="名前" class="p-2 border rounded-lg outline-none">
-                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-r-lg"></select></div>
+                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-l-lg"></select></div>
                     <input type="time" id="startTime" class="p-2 border rounded-lg">
                     <select id="genre" class="p-2 border rounded-lg"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
                     <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 p-2 border rounded-lg">
@@ -177,13 +180,12 @@
                 const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 allData = await res.json();
                 localStorage.setItem('v_zukan_cache_v3', JSON.stringify(allData));
-                updateStructuredData(); // AI向けデータを更新
+                updateStructuredData();
                 renderAll();
                 if(window.twttr && twttr.widgets) twttr.widgets.load();
             } catch (e) { console.error(e); }
         }
 
-        // AI検索向けにデータを整理してHTMLに埋め込む関数
         function updateStructuredData() {
             const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === getJSTToday(0));
             const jsonld = {
