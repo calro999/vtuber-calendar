@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fff5f7; color: #4a4a4a; }
-        .nav-btn { padding: 6px 14px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.75rem; white-space: nowrap; }
+        .nav-btn { padding: 6px 14px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.75rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         .stream-card { background: white; border-radius: 20px; border: 1px solid #ffdeeb; height: 360px; display: flex; flex-direction: column; overflow: hidden; }
         .stream-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
@@ -21,7 +21,7 @@
         #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 3px solid #ffb7c5; padding: 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; border-radius: 20px 20px 0 0; }
         #tagTray.open { transform: translateY(0); }
         .tag-btn { padding: 10px 4px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; border: 1px solid #eee; text-align: center; cursor: pointer; }
-        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 340px; display: flex; flex-direction: column; overflow: hidden; cursor: pointer; }
+        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 340px; display: flex; flex-direction: column; overflow: hidden; }
         .zukan-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
         .zukan-iframe-wrap iframe { width: 100%; height: 450px; transform: scale(0.65); transform-origin: top center; border: none; }
         .timeline-row { display: flex; border-bottom: 1px solid #fff0f3; min-height: 38px; align-items: center; }
@@ -46,12 +46,12 @@
 
         <section id="formArea" class="bg-white/70 p-4 rounded-2xl mb-4 border border-pink-100 hidden">
             <div id="formStream" class="hidden">
-                <p class="font-bold text-[#ff85a2] mb-2 text-[10px]">📺 配信スケジュール登録 (JST基準)</p>
+                <p class="font-bold text-[#ff85a2] mb-2 text-[10px]">📺 配信スケジュール登録</p>
                 <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-6 gap-2">
                     <div class="flex"><select id="month" class="w-full text-xs p-1 border rounded"></select><select id="day" class="w-full text-xs p-1 border rounded"></select></div>
                     <input type="time" id="startTime" class="text-xs p-1 border rounded" required>
-                    <select id="genre" class="text-xs p-1 border rounded"><option>💬 雑談</option><option>🎮 ゲーム</option><option>🎤 歌枠</option><option>💡 その他</option></select>
-                    <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 text-xs border p-1 rounded">
+                    <select id="genre" class="text-xs p-1 border rounded"><option>雑談</option><option>ゲーム</option><option>歌枠</option><option>その他</option></select>
+                    <input type="url" id="tweetUrl" placeholder="告知ポストURL" class="col-span-1 md:col-span-2 text-xs border p-1 rounded" required>
                     <button type="submit" class="bg-[#ffb7c5] text-white font-bold rounded-lg text-[10px] py-1">登録</button>
                 </form>
             </div>
@@ -76,9 +76,7 @@
             </div>
         </section>
 
-        <section id="viewOhv" class="hidden flex flex-col items-center">
-            <div id="ohvStack"></div>
-        </section>
+        <section id="viewOhv" class="hidden flex flex-col items-center"><div id="ohvStack"></div></section>
 
         <section id="viewZukan" class="hidden">
             <div id="filterBar" class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-2"></div>
@@ -118,18 +116,15 @@
         let selectedVoice = "";
         let currentFilter = 'all';
 
-        // 海外からでも日本時間(JST)の「yyyy-mm-dd」文字列を作る
-        function getJSTDateStr(offset = 0) {
+        const ALL_TAGS = ['カワボ', 'イケボ', 'ロリボ', 'お姉さん', 'ハスキー', '中性的', 'アットホーム', '応援型', '落ち着いた', '賑やか', 'ギャップ'];
+
+        // 日本時間の今日を文字列(yyyy-mm-dd)で取得
+        function getJSTToday(offset = 0) {
             const date = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             date.setDate(date.getDate() + offset);
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         }
-
-        let selectedTimelineDate = getJSTDateStr(0);
-        const ALL_TAGS = ['カワボ', 'イケボ', 'ロリボ', 'お姉さん', 'ハスキー', '中性的', 'アットホーム', '応援型', '落ち着いた', '賑やか', 'ギャップ'];
+        let selectedTimelineDate = getJSTToday(0);
 
         async function fetchData() {
             try {
@@ -151,13 +146,9 @@
             const list = document.getElementById('streamList');
             const nav = document.getElementById('timeNav');
             list.innerHTML = ""; nav.innerHTML = "";
-            const today = getJSTDateStr(0);
+            const today = getJSTToday(0);
             
-            // 登録データのdate形式を正規化して比較
-            const streams = allData.filter(i => {
-                const itemDate = i.date.includes('T') ? i.date.split('T')[0] : i.date;
-                return i.type === "配信" && itemDate === today;
-            }).sort((a,b) => (a.time||"").localeCompare(b.time||""));
+            const streams = allData.filter(i => i.type === "配信" && i.date === today).sort((a,b) => a.time.localeCompare(b.time));
 
             if(streams.length === 0) {
                 list.innerHTML = "<p class='text-center text-gray-400 text-xs py-10 col-span-full'>本日の配信予定はありません</p>";
@@ -187,13 +178,10 @@
                 row.innerHTML = `<div class="timeline-hour">${i}:00</div><div id="box-${i}" class="timeline-slot"></div>`;
                 container.appendChild(row);
             }
-            allData.filter(i => {
-                const itemDate = i.date.includes('T') ? i.date.split('T')[0] : i.date;
-                return i.type === "配信" && itemDate === selectedTimelineDate;
-            }).forEach(item => {
+            allData.filter(i => i.type === "配信" && i.date === selectedTimelineDate).forEach(item => {
                 const h = parseInt(item.time.split(':')[0]);
                 const box = document.getElementById(`box-${h}`);
-                if(box) box.innerHTML += `<button class="text-[9px] border border-pink-200 text-pink-400 px-2 py-0.5 rounded-full bg-white font-bold" onclick="window.open('${item.url}')">${item.time} ${item.genre||''}</button>`;
+                if(box) box.innerHTML += `<button class="text-[9px] border border-pink-200 text-pink-400 px-2 py-0.5 rounded-full bg-white font-bold" onclick="window.open('${item.url}')">${item.time} ${item.genre}</button>`;
             });
         }
 
@@ -201,7 +189,8 @@
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = "";
             currentCardIndex = 0;
-            const ohvs = allData.filter(i => i.type === "おはV" && !i.voice).reverse();
+            // 未評価(voice列が空)のものだけを表示
+            const ohvs = allData.filter(i => i.type === "おはV" && (i.voice === "" || !i.voice)).reverse();
             if(ohvs.length === 0) {
                 stack.innerHTML = "<p class='text-center py-20 text-gray-400 text-xs'>評価待ちのポストはありません</p>";
                 return;
@@ -228,8 +217,8 @@
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
-            // voiceが埋まっているものを全件取得
-            const rated = allData.filter(i => i.type === "おはV" && i.voice);
+            // 評価済みのものを表示
+            const rated = allData.filter(i => i.type === "おはV" && i.voice !== "");
             const filtered = currentFilter === 'all' ? rated : rated.filter(i => i.voice === currentFilter || i.atm === currentFilter);
 
             filtered.forEach(item => {
@@ -245,11 +234,7 @@
             });
         }
 
-        function filterZukan(tag) {
-            currentFilter = tag;
-            renderFilterButtons();
-            renderZukan();
-        }
+        function filterZukan(tag) { currentFilter = tag; renderFilterButtons(); renderZukan(); }
 
         function switchTab(t) {
             ['viewMain','viewTimeline','viewOhv','viewZukan'].forEach(v => document.getElementById(v).classList.add('hidden'));
@@ -271,37 +256,31 @@
 
         function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
         async function completeAuth(atm) {
-            const ohvs = allData.filter(i => i.type === "おはV" && !i.voice).reverse();
+            const ohvs = allData.filter(i => i.type === "おはV" && (i.voice === "" || !i.voice)).reverse();
             const target = ohvs[currentCardIndex];
             nextCard();
             resetTray();
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "rate", url: target.url, voice: selectedVoice, atm: atm }) });
-            setTimeout(fetchData, 1000);
+            setTimeout(fetchData, 800);
         }
         function cancelAuth() { resetTray(); nextCard(); }
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
         function nextCard() {
             const cards = document.querySelectorAll('.swipe-card');
-            if(cards[currentCardIndex]) {
-                cards[currentCardIndex].classList.add('swiped-right');
-                currentCardIndex++;
-                updateTray();
-            }
+            if(cards[currentCardIndex]) { cards[currentCardIndex].classList.add('swiped-right'); currentCardIndex++; updateTray(); }
         }
 
         async function submitData(d) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
-            alert("登録しました");
-            setTimeout(fetchData, 1000);
+            alert("登録しました"); setTimeout(fetchData, 800);
         }
 
         window.onload = () => {
             const m = document.getElementById('month'), d = document.getElementById('day');
             for(let i=1;i<=12;i++) m.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
             for(let i=1;i<=31;i++) d.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
-            const jstToday = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
-            m.value = String(jstToday.getMonth()+1).padStart(2,'0');
-            d.value = String(jstToday.getDate()).padStart(2,'0');
+            const today = getJSTToday(0).split('-');
+            m.value = today[1]; d.value = today[2];
 
             const ds = document.getElementById('dateSelector');
             ["今日","明日","明後日"].forEach((l,i)=>{
@@ -309,7 +288,7 @@
                 b.className = `nav-btn ${i===0?'active':''}`;
                 b.innerText = l;
                 b.onclick = (e) => {
-                    selectedTimelineDate = getJSTDateStr(i);
+                    selectedTimelineDate = getJSTToday(i);
                     document.querySelectorAll('#dateSelector .nav-btn').forEach(btn => btn.classList.remove('active'));
                     e.target.classList.add('active');
                     renderTimeline();
@@ -325,7 +304,8 @@
         };
         document.getElementById('ohvForm').onsubmit = (e) => {
             e.preventDefault();
-            submitData({ date: getJSTDateStr(0), url: document.getElementById('ohvUrl').value, type: "おはV" });
+            submitData({ date: getJSTToday(0), time: "", genre: "", url: document.getElementById('ohvUrl').value, type: "おはV" });
+            document.getElementById('ohvUrl').value = "";
         };
     </script>
 </body>
