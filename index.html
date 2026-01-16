@@ -107,7 +107,6 @@
             position: relative;
             overflow: hidden;
         }
-        .v-profile-container::before { content: '🎀'; position: absolute; top: -10px; right: -10px; font-size: 50px; opacity: 0.1; }
         .v-header { text-align: center; margin-bottom: 20px; }
         .v-name-ruby { font-size: 0.7em; letter-spacing: 0.3em; color: #ff85a2; display: block; margin-bottom: -5px; }
         .v-name-main { font-size: 1.8em; font-weight: 500; color: #ff7096; text-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
@@ -150,7 +149,12 @@
                     <input type="text" id="vName" placeholder="名前" class="p-2 border rounded-lg outline-none">
                     <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-r-lg"></select></div>
                     <input type="time" id="startTime" class="p-2 border rounded-lg">
-                    <select id="genre" class="p-2 border rounded-lg"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
+                    <select id="genre" class="p-2 border rounded-lg">
+                        <option value="雑談">💬 雑談</option>
+                        <option value="ゲーム">🎮 ゲーム</option>
+                        <option value="歌枠">🎤 歌枠</option>
+                        <option value="その他">💡 その他</option>
+                    </select>
                     <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 p-2 border rounded-lg">
                     <button type="submit" class="bg-[#ff85a2] text-white rounded-lg py-2">登録</button>
                 </form>
@@ -176,7 +180,9 @@
             </div>
         </section>
 
-        <section id="viewOhv" class="hidden flex flex-col items-center"><div id="ohvStack" class="mt-2"></div></section>
+        <section id="viewOhv" class="hidden flex flex-col items-center">
+            <div id="ohvStack" class="mt-2"></div>
+        </section>
 
         <section id="viewZukan" class="hidden">
             <div id="filterBar" class="flex gap-1.5 overflow-x-auto no-scrollbar mb-4"></div>
@@ -241,13 +247,22 @@
         let selectedVoice = "";
         let currentFilter = 'all';
 
-        const GENRE_DATA = { "雑談": {emoji:"💬",class:"bg-chat"}, "ゲーム": {emoji:"🎮",class:"bg-game"}, "歌枠": {emoji:"🎤",class:"bg-sing"}, "その他": {emoji:"💡",class:"bg-else"} };
+        const GENRE_DATA = { 
+            "雑談": {emoji:"💬",class:"bg-chat"}, 
+            "ゲーム": {emoji:"🎮",class:"bg-game"}, 
+            "歌枠": {emoji:"🎤",class:"bg-sing"}, 
+            "その他": {emoji:"💡",class:"bg-else"} 
+        };
         const ALL_TAGS = ['カワボ', 'イケボ', 'ロリボ', 'お姉さん', 'ハスキー', '中性的', 'アットホーム', '応援型', '落ち着いた', '賑やか', 'ギャップ'];
 
+        // 日付取得（不一致を防ぐための超慎重バージョン）
         function getJSTToday(offset = 0) {
             const date = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             date.setDate(date.getDate() + offset);
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const y = date.getFullYear();
+            const m = ("0" + (date.getMonth() + 1)).slice(-2);
+            const d = ("0" + date.getDate()).slice(-2);
+            return `${y}-${m}-${d}`; // 必ず 2026-01-16 の形式を返す
         }
         let selectedTimelineDate = getJSTToday(0);
 
@@ -268,20 +283,36 @@
         }
 
         function updateStructuredData() {
-            const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === getJSTToday(0));
-            const jsonld = { "@context": "https://schema.org", "@type": "ItemList", "name": "本日のVTuber配信スケジュール", "itemListElement": streams.slice(0, 10).map((s, idx) => ({ "@type": "ListItem", "position": idx + 1, "name": s.name, "description": `${s.time}から${s.genre}配信予定` })) };
+            const streams = allData.filter(i => i.type === "配信" && i.date === getJSTToday(0));
+            const jsonld = { 
+                "@context": "https://schema.org", 
+                "@type": "ItemList", 
+                "name": "本日のVTuber配信スケジュール", 
+                "itemListElement": streams.slice(0, 10).map((s, idx) => ({ 
+                    "@type": "ListItem", 
+                    "position": idx + 1, 
+                    "name": s.name, 
+                    "description": `${s.time}から${s.genre}配信予定` 
+                })) 
+            };
             const script = document.getElementById('structuredData');
             if(script) script.textContent = JSON.stringify(jsonld);
         }
 
-        function renderAll() { renderStreams(); renderTimeline(); renderStack(); renderZukan(); renderFilterButtons(); }
+        function renderAll() { 
+            renderStreams(); 
+            renderTimeline(); 
+            renderStack(); 
+            renderZukan(); 
+            renderFilterButtons(); 
+        }
 
         function renderStreams() {
             const list = document.getElementById('streamList');
             const nav = document.getElementById('timeNav');
             list.innerHTML = ""; nav.innerHTML = "";
             const today = getJSTToday(0);
-            const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === today).sort((a,b) => a.time.localeCompare(b.time));
+            const streams = allData.filter(i => i.type === "配信" && i.date === today).sort((a,b) => a.time.localeCompare(b.time));
             if(streams.length === 0) { list.innerHTML = "<p class='text-center text-gray-400 text-xs py-10 col-span-full'>予定を募集中です 🎀</p>"; return; }
             let lastH = -1;
             streams.forEach(item => {
@@ -305,7 +336,7 @@
                 const hour = (i + 7) % 24;
                 container.innerHTML += `<div class="timeline-row"><div class="timeline-hour">${hour}:00</div><div id="box-${hour}" class="timeline-slot"></div></div>`;
             }
-            allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === selectedTimelineDate).forEach(item => {
+            allData.filter(i => i.type === "配信" && i.date === selectedTimelineDate).forEach(item => {
                 const h = parseInt(item.time.split(':')[0]);
                 const box = document.getElementById(`box-${h}`);
                 const g = GENRE_DATA[item.genre] || GENRE_DATA["その他"];
@@ -319,8 +350,8 @@
             const today = getJSTToday(0);
             const myDoneUrls = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             
-            // 重要：ここでシートから取得した全データから「おはV」かつ「未評価」を抽出
-            ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !myDoneUrls.includes(i.url)).reverse();
+            // 重要：ここでシートの日付と完全一致するもののみ表示
+            ohvQueue = allData.filter(i => i.type === "おはV" && String(i.date) === today && !myDoneUrls.includes(i.url)).reverse();
             currentCardIndex = 0;
 
             if(ohvQueue.length === 0) {
@@ -389,12 +420,7 @@
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
             if (target && target.type === "おはV") {
-                const sendData = { 
-                    action: "rate", 
-                    url: target.url, 
-                    voice: selectedVoice, 
-                    atm: atm 
-                };
+                const sendData = { action: "rate", url: target.url, voice: selectedVoice, atm: atm };
                 markAsDone(target.url);
                 nextCard();
                 resetTray();
@@ -407,7 +433,6 @@
         }
 
         function cancelAuth() { if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url); resetTray(); nextCard(); }
-
         function markAsDone(url) {
             const done = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             if(!done.includes(url)) done.push(url);
@@ -427,7 +452,8 @@
 
         async function submitData(d) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
-            alert("登録しました！"); fetchData();
+            alert("登録しました！"); 
+            fetchData();
         }
 
         window.onload = () => {
