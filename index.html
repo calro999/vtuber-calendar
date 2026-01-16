@@ -149,12 +149,7 @@
                     <input type="text" id="vName" placeholder="名前" class="p-2 border rounded-lg outline-none">
                     <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-r-lg"></select></div>
                     <input type="time" id="startTime" class="p-2 border rounded-lg">
-                    <select id="genre" class="p-2 border rounded-lg">
-                        <option value="雑談">💬 雑談</option>
-                        <option value="ゲーム">🎮 ゲーム</option>
-                        <option value="歌枠">🎤 歌枠</option>
-                        <option value="その他">💡 その他</option>
-                    </select>
+                    <select id="genre" class="p-2 border rounded-lg"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
                     <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 p-2 border rounded-lg">
                     <button type="submit" class="bg-[#ff85a2] text-white rounded-lg py-2">登録</button>
                 </form>
@@ -180,9 +175,7 @@
             </div>
         </section>
 
-        <section id="viewOhv" class="hidden flex flex-col items-center">
-            <div id="ohvStack" class="mt-2"></div>
-        </section>
+        <section id="viewOhv" class="hidden flex flex-col items-center"><div id="ohvStack" class="mt-2"></div></section>
 
         <section id="viewZukan" class="hidden">
             <div id="filterBar" class="flex gap-1.5 overflow-x-auto no-scrollbar mb-4"></div>
@@ -247,22 +240,16 @@
         let selectedVoice = "";
         let currentFilter = 'all';
 
-        const GENRE_DATA = { 
-            "雑談": {emoji:"💬",class:"bg-chat"}, 
-            "ゲーム": {emoji:"🎮",class:"bg-game"}, 
-            "歌枠": {emoji:"🎤",class:"bg-sing"}, 
-            "その他": {emoji:"💡",class:"bg-else"} 
-        };
+        const GENRE_DATA = { "雑談": {emoji:"💬",class:"bg-chat"}, "ゲーム": {emoji:"🎮",class:"bg-game"}, "歌枠": {emoji:"🎤",class:"bg-sing"}, "その他": {emoji:"💡",class:"bg-else"} };
         const ALL_TAGS = ['カワボ', 'イケボ', 'ロリボ', 'お姉さん', 'ハスキー', '中性的', 'アットホーム', '応援型', '落ち着いた', '賑やか', 'ギャップ'];
 
-        // 日付取得（不一致を防ぐための超慎重バージョン）
         function getJSTToday(offset = 0) {
             const date = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
             date.setDate(date.getDate() + offset);
             const y = date.getFullYear();
             const m = ("0" + (date.getMonth() + 1)).slice(-2);
             const d = ("0" + date.getDate()).slice(-2);
-            return `${y}-${m}-${d}`; // 必ず 2026-01-16 の形式を返す
+            return `${y}-${m}-${d}`;
         }
         let selectedTimelineDate = getJSTToday(0);
 
@@ -276,36 +263,12 @@
                 const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 allData = await res.json();
                 localStorage.setItem('v_zukan_cache_v3', JSON.stringify(allData));
-                updateStructuredData();
                 renderAll();
                 if(window.twttr && twttr.widgets) twttr.widgets.load();
             } catch (e) { console.error(e); }
         }
 
-        function updateStructuredData() {
-            const streams = allData.filter(i => i.type === "配信" && i.date === getJSTToday(0));
-            const jsonld = { 
-                "@context": "https://schema.org", 
-                "@type": "ItemList", 
-                "name": "本日のVTuber配信スケジュール", 
-                "itemListElement": streams.slice(0, 10).map((s, idx) => ({ 
-                    "@type": "ListItem", 
-                    "position": idx + 1, 
-                    "name": s.name, 
-                    "description": `${s.time}から${s.genre}配信予定` 
-                })) 
-            };
-            const script = document.getElementById('structuredData');
-            if(script) script.textContent = JSON.stringify(jsonld);
-        }
-
-        function renderAll() { 
-            renderStreams(); 
-            renderTimeline(); 
-            renderStack(); 
-            renderZukan(); 
-            renderFilterButtons(); 
-        }
+        function renderAll() { renderStreams(); renderTimeline(); renderStack(); renderZukan(); renderFilterButtons(); }
 
         function renderStreams() {
             const list = document.getElementById('streamList');
@@ -349,16 +312,12 @@
             stack.innerHTML = "";
             const today = getJSTToday(0);
             const myDoneUrls = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
-            
-            // 重要：ここでシートの日付と完全一致するもののみ表示
             ohvQueue = allData.filter(i => i.type === "おはV" && String(i.date) === today && !myDoneUrls.includes(i.url)).reverse();
             currentCardIndex = 0;
-
             if(ohvQueue.length === 0) {
                 stack.innerHTML = `<div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200"><p class="text-3xl mb-2">☁️</p><p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p></div>`;
                 updateTray(); return;
             }
-
             ohvQueue.forEach((item, idx) => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
@@ -376,7 +335,6 @@
             list.innerHTML = "";
             const rated = allData.filter(i => (i.voice && i.voice.trim() !== "") || (i.atm && i.atm.trim() !== ""));
             const filtered = currentFilter === 'all' ? rated : rated.filter(i => String(i.voice).includes(currentFilter) || String(i.atm).includes(currentFilter));
-
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const voices = [...new Set(String(item.voice || "").split(',').filter(t => t))];
@@ -416,7 +374,6 @@
         }
 
         function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
-        
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
             if (target && target.type === "おはV") {
@@ -426,10 +383,7 @@
                 resetTray();
                 await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(sendData) });
                 fetchData();
-            } else {
-                nextCard();
-                resetTray();
-            }
+            } else { nextCard(); resetTray(); }
         }
 
         function cancelAuth() { if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url); resetTray(); nextCard(); }
@@ -440,7 +394,6 @@
         }
 
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
-        
         function nextCard() {
             const card = document.getElementById(`card-${currentCardIndex}`);
             if(card) {
@@ -452,8 +405,7 @@
 
         async function submitData(d) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
-            alert("登録しました！"); 
-            fetchData();
+            alert("登録しました！"); fetchData();
         }
 
         window.onload = () => {
