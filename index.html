@@ -40,7 +40,26 @@
             background: linear-gradient(135deg, #fff5f7 0%, #f0f7ff 100%);
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
-        .nav-btn { padding: 6px 12px; border-radius: 999px; font-weight: bold; transition: 0.2s; background: white; color: var(--main-pink); border: 2px solid var(--main-pink); font-size: 0.8rem; white-space: nowrap; }
+
+        /* モバイルタブ見切れ修正：折り返しと中央寄せを許可 */
+        .nav-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 4px;
+        }
+        .nav-btn { 
+            padding: 6px 12px; 
+            border-radius: 999px; 
+            font-weight: bold; 
+            transition: 0.2s; 
+            background: white; 
+            color: var(--main-pink); 
+            border: 2px solid var(--main-pink); 
+            font-size: 0.8rem; 
+            white-space: nowrap; 
+        }
         .nav-btn.active { background: var(--main-pink); color: white; box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3); }
         
         .bg-chat { background: #3ab0ff !important; } 
@@ -110,7 +129,7 @@
     <div class="max-w-5xl mx-auto px-3 pb-32">
         <header class="text-center pt-4 pb-2">
             <h1 class="text-xl font-bold text-[#ff85a2] tracking-tighter drop-shadow-sm">🎀 皆で作るV図鑑！ 🎀</h1>
-            <nav class="flex justify-center gap-1.5 overflow-x-auto no-scrollbar py-2 mt-1">
+            <nav class="nav-container">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</button>
                 <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">タイムライン</button>
                 <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</button>
@@ -216,12 +235,7 @@
         let selectedVoice = "";
         let currentFilter = 'all';
 
-        const GENRE_DATA = { 
-            "雑談": { emoji: "💬", class: "bg-chat" },
-            "ゲーム": { emoji: "🎮", class: "bg-game" },
-            "歌枠": { emoji: "🎤", class: "bg-sing" },
-            "その他": { emoji: "💡", class: "bg-else" }
-        };
+        const GENRE_DATA = { "雑談": {emoji:"💬",class:"bg-chat"}, "ゲーム": {emoji:"🎮",class:"bg-game"}, "歌枠": {emoji:"🎤",class:"bg-sing"}, "その他": {emoji:"💡",class:"bg-else"} };
         const ALL_TAGS = ['カワボ', 'イケボ', 'ロリボ', 'お姉さん', 'ハスキー', '中性的', 'アットホーム', '応援型', '落ち着いた', '賑やか', 'ギャップ'];
 
         function getJSTToday(offset = 0) {
@@ -249,24 +263,12 @@
 
         function updateStructuredData() {
             const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === getJSTToday(0));
-            const jsonld = {
-                "@context": "https://schema.org",
-                "@type": "ItemList",
-                "name": "本日のVTuber配信スケジュール",
-                "itemListElement": streams.slice(0, 10).map((s, idx) => ({
-                    "@type": "ListItem",
-                    "position": idx + 1,
-                    "name": s.name,
-                    "description": `${s.time}から${s.genre}配信予定`
-                }))
-            };
+            const jsonld = { "@context": "https://schema.org", "@type": "ItemList", "name": "本日のVTuber配信スケジュール", "itemListElement": streams.slice(0, 10).map((s, idx) => ({ "@type": "ListItem", "position": idx + 1, "name": s.name, "description": `${s.time}から${s.genre}配信予定` })) };
             const script = document.getElementById('structuredData');
             if(script) script.textContent = JSON.stringify(jsonld);
         }
 
-        function renderAll() {
-            renderStreams(); renderTimeline(); renderStack(); renderZukan(); renderFilterButtons();
-        }
+        function renderAll() { renderStreams(); renderTimeline(); renderStack(); renderZukan(); renderFilterButtons(); }
 
         function renderStreams() {
             const list = document.getElementById('streamList');
@@ -274,12 +276,7 @@
             list.innerHTML = ""; nav.innerHTML = "";
             const today = getJSTToday(0);
             const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === today).sort((a,b) => a.time.localeCompare(b.time));
-
-            if(streams.length === 0) {
-                list.innerHTML = "<p class='text-center text-gray-400 text-xs py-10 col-span-full'>予定を募集中です 🎀</p>";
-                return;
-            }
-
+            if(streams.length === 0) { list.innerHTML = "<p class='text-center text-gray-400 text-xs py-10 col-span-full'>予定を募集中です 🎀</p>"; return; }
             let lastH = -1;
             streams.forEach(item => {
                 const h = parseInt(item.time.split(':')[0]);
@@ -291,12 +288,7 @@
                     lastH = h;
                 }
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
-                list.innerHTML += `
-                    <article class="stream-card">
-                        <h2 class="p-2 text-center font-bold text-sm text-white ${g.class}">${g.emoji} ${item.name || 'VTuber'}</h2>
-                        <div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
-                        <a href="${item.url}" target="_blank" class="py-3 text-white text-center font-bold text-xs ${g.class}">Xで詳しく見る</a>
-                    </article>`;
+                list.innerHTML += `<article class="stream-card"><h2 class="p-2 text-center font-bold text-sm text-white ${g.class}">${g.emoji} ${item.name || 'VTuber'}</h2><div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div><a href="${item.url}" target="_blank" class="py-3 text-white text-center font-bold text-xs ${g.class}">Xで詳しく見る</a></article>`;
             });
         }
 
@@ -311,31 +303,23 @@
                 const h = parseInt(item.time.split(':')[0]);
                 const box = document.getElementById(`box-${h}`);
                 const g = GENRE_DATA[item.genre] || GENRE_DATA["その他"];
-                if(box) {
-                    box.innerHTML += `<button class="text-[10px] px-3 py-1.5 rounded-full font-bold text-white shadow-sm ${g.class}" onclick="window.open('${item.url}')">${g.emoji} ${item.time} ${item.name || ''}</button>`;
-                }
+                if(box) box.innerHTML += `<button class="text-[10px] px-3 py-1.5 rounded-full font-bold text-white shadow-sm ${g.class}" onclick="window.open('${item.url}')">${g.emoji} ${item.time} ${item.name || ''}</button>`;
             });
         }
 
+        // 全員が評価できるようにローカル端末の履歴を参照
         function renderStack() {
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = "";
             const today = getJSTToday(0);
-            const swipedUrls = JSON.parse(sessionStorage.getItem('swiped_urls') || '[]');
+            const myDoneUrls = JSON.parse(localStorage.getItem('my_evaluated_urls') || '[]');
             
-            // 全員に一通り出すために、GASから取得した生のおはVのうち、自分がまだ評価・スキップしてないものを抽出
-            ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !swipedUrls.includes(i.url)).reverse();
+            ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !myDoneUrls.includes(i.url)).reverse();
             currentCardIndex = 0;
 
             if(ohvQueue.length === 0) {
-                stack.innerHTML = `
-                    <div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200">
-                        <p class="text-3xl mb-2">☁️</p>
-                        <p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p>
-                        <p class="text-[10px] text-gray-400 mt-1">みんなでVを応援しよう！✨</p>
-                    </div>`;
-                updateTray();
-                return;
+                stack.innerHTML = `<div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200"><p class="text-3xl mb-2">☁️</p><p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p><p class="text-[10px] text-gray-400 mt-1">みんなでVを応援しよう！✨</p></div>`;
+                updateTray(); return;
             }
 
             ohvQueue.forEach((item, idx) => {
@@ -350,26 +334,22 @@
             updateTray();
         }
 
+        // 複数タグのカンマ区切り表示に対応
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
-            // 空白除去と文字列判定を強化
-            const rated = allData.filter(i => i.voice && String(i.voice).trim() !== "");
+            const rated = allData.filter(i => (i.voice && i.voice.trim() !== "") || (i.atm && i.atm.trim() !== ""));
             const filtered = currentFilter === 'all' ? rated : rated.filter(i => String(i.voice).includes(currentFilter) || String(i.atm).includes(currentFilter));
 
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
-                const div = document.createElement('article');
-                div.className = "zukan-card shadow-sm cursor-pointer";
-                div.innerHTML = `
-                    <h3 class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</h3>
-                    <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
-                    <div class="p-2 bg-white flex flex-wrap gap-1 border-t">
-                        <span class="bg-pink-50 text-pink-600 text-[9px] px-2 py-0.5 rounded-full font-bold">#${item.voice}</span>
-                        <span class="bg-blue-50 text-blue-600 text-[9px] px-2 py-0.5 rounded-full font-bold">#${item.atm}</span>
-                    </div>`;
-                div.onclick = () => window.open(item.url);
-                list.appendChild(div);
+                const voices = [...new Set(String(item.voice || "").split(',').filter(t => t))];
+                const atms = [...new Set(String(item.atm || "").split(',').filter(t => t))];
+                let tags = "";
+                voices.forEach(v => tags += `<span class="bg-pink-50 text-pink-600 text-[8px] px-1.5 py-0.5 rounded-full font-bold">#${v}</span>`);
+                atms.forEach(a => tags += `<span class="bg-blue-50 text-blue-600 text-[8px] px-1.5 py-0.5 rounded-full font-bold">#${a}</span>`);
+
+                list.innerHTML += `<article class="zukan-card shadow-sm cursor-pointer" onclick="window.open('${item.url}')"><h3 class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</h3><div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div><div class="p-2 bg-white flex flex-wrap gap-1 border-t">${tags}</div></article>`;
             });
         }
 
@@ -404,34 +384,25 @@
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
             if (target) {
-                const sendData = { 
-                    action: "rate", 
-                    url: target.url, 
-                    name: target.name, 
-                    date: target.date,
-                    voice: selectedVoice, 
-                    atm: atm,
-                    type: "評価済"
-                };
-                markAsSwiped(target.url);
+                // typeを変更せず、action: "rate" でタグを「追加」する命令を送る
+                const sendData = { action: "rate", url: target.url, name: target.name, date: target.date, voice: selectedVoice, atm: atm, type: "おはV" };
+                markAsDone(target.url);
                 nextCard();
                 resetTray();
-                // 確実に全情報を送信
                 await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(sendData) });
                 fetchData();
             }
         }
 
         function cancelAuth() { 
-            if(ohvQueue[currentCardIndex]) markAsSwiped(ohvQueue[currentCardIndex].url);
-            resetTray(); 
-            nextCard(); 
+            if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url);
+            resetTray(); nextCard(); 
         }
 
-        function markAsSwiped(url) {
-            const swiped = JSON.parse(sessionStorage.getItem('swiped_urls') || '[]');
-            if(!swiped.includes(url)) swiped.push(url);
-            sessionStorage.setItem('swiped_urls', JSON.stringify(swiped));
+        function markAsDone(url) {
+            const done = JSON.parse(localStorage.getItem('my_evaluated_urls') || '[]');
+            if(!done.includes(url)) done.push(url);
+            localStorage.setItem('my_evaluated_urls', JSON.stringify(done));
         }
 
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
@@ -441,10 +412,7 @@
             if(card) {
                 card.classList.add('swiped-right');
                 currentCardIndex++;
-                setTimeout(() => {
-                    if(currentCardIndex >= ohvQueue.length) renderStack();
-                    updateTray();
-                }, 400);
+                setTimeout(() => { if(currentCardIndex >= ohvQueue.length) renderStack(); updateTray(); }, 400);
             }
         }
 
