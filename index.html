@@ -14,32 +14,27 @@
             background: linear-gradient(135deg, #fff5f7 0%, #f0f7ff 100%);
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
-        /* ナビゲーションをコンパクトに */
         .nav-btn { padding: 6px 12px; border-radius: 999px; font-weight: bold; transition: 0.2s; background: white; color: var(--main-pink); border: 2px solid var(--main-pink); font-size: 0.8rem; white-space: nowrap; }
         .nav-btn.active { background: var(--main-pink); color: white; box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3); }
         
-        /* カテゴリ配色（鮮やか・パステル） */
         .bg-chat { background: #3ab0ff !important; } 
         .bg-game { background: #ff9f1c !important; } 
         .bg-sing { background: #ff4d6d !important; } 
         .bg-else { background: #9d4edd !important; } 
 
-        /* 1画面に収まるサイズ調整 */
         .stream-card { background: white; border-radius: 20px; border: 1px solid rgba(255,133,162,0.2); height: 420px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.04); transition: 0.3s; }
         .stream-iframe-wrap { flex: 1; overflow-y: auto; background: #fff; -webkit-overflow-scrolling: touch; }
         .stream-iframe-wrap iframe { width: 100%; height: 500px; transform: scale(0.9); transform-origin: top center; border: none; }
 
-        /* 今日のおはV：被り防止レイアウト */
         #ohvStack { position: relative; height: 380px; width: 100%; max-width: 320px; margin: 0 auto; }
         .swipe-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 20px; border: 1px solid #ffdeeb; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
         .card-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
+        .swiped-right { transform: translateX(150%) rotate(30deg); opacity: 0; }
 
-        /* 評価トレイをさらにコンパクトに */
         #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); border-top: 3px solid var(--main-pink); padding: 12px 12px 24px 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; border-radius: 24px 24px 0 0; }
         #tagTray.open { transform: translateY(0); }
         .tag-btn { padding: 8px 4px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; border: 1px solid #eee; text-align: center; cursor: pointer; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 
-        /* 図鑑カード：最適化 */
         .zukan-card { background: white; border-radius: 16px; border: 1px solid rgba(255,133,162,0.1); height: 320px; display: flex; flex-direction: column; overflow: hidden; }
         .zukan-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
         .zukan-iframe-wrap iframe { width: 100%; height: 450px; transform: scale(0.75); transform-origin: top center; border: none; }
@@ -58,7 +53,7 @@
             <h1 class="text-xl font-bold text-[#ff85a2] tracking-tighter drop-shadow-sm">🎀 皆で作るV図鑑！ 🎀</h1>
             <nav class="flex justify-center gap-1.5 overflow-x-auto no-scrollbar py-2 mt-1">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</button>
-                <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">時間別</button>
+                <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">タイムライン</button>
                 <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</button>
                 <button id="tabZukan" class="nav-btn" onclick="switchTab('zukan')">皆で作るV図鑑</button>
             </nav>
@@ -162,7 +157,10 @@
                 allData = await res.json();
                 localStorage.setItem('v_zukan_cache_v3', JSON.stringify(allData));
                 renderAll();
-                if(window.twttr) twttr.widgets.load();
+                // 表示速度向上のため、レンダリング後に一度だけ呼び出す
+                if(window.twttr && twttr.widgets) {
+                    twttr.widgets.load();
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -205,10 +203,12 @@
         function renderTimeline() {
             const container = document.getElementById('calendarContainer');
             container.innerHTML = "";
+            // 朝7時からスタートするようにループを調整
             for (let i = 0; i < 24; i++) {
+                const hour = (i + 7) % 24;
                 const row = document.createElement('div');
                 row.className = 'timeline-row';
-                row.innerHTML = `<div class="timeline-hour">${i}:00</div><div id="box-${i}" class="timeline-slot"></div>`;
+                row.innerHTML = `<div class="timeline-hour">${hour}:00</div><div id="box-${hour}" class="timeline-slot"></div>`;
                 container.appendChild(row);
             }
             allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === selectedTimelineDate).forEach(item => {
@@ -256,11 +256,13 @@
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const div = document.createElement('div');
                 div.className = "zukan-card shadow-sm";
+                // voiceとatmの両方のタグを表示するように修正
                 div.innerHTML = `
                     <div class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</div>
                     <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
                     <div class="p-2 bg-white flex flex-wrap gap-1 border-t">
                         <span class="bg-pink-50 text-pink-600 text-[9px] px-2 py-0.5 rounded-full font-bold">#${item.voice}</span>
+                        <span class="bg-blue-50 text-blue-600 text-[9px] px-2 py-0.5 rounded-full font-bold">#${item.atm}</span>
                     </div>`;
                 div.onclick = () => window.open(item.url);
                 list.appendChild(div);
@@ -278,6 +280,9 @@
             document.querySelectorAll('nav .nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
             updateTray();
+            
+            // タブ切り替え時にも読み込みを促進
+            if(window.twttr && twttr.widgets) twttr.widgets.load();
         }
 
         function updateTray() {
