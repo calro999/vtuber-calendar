@@ -41,7 +41,6 @@
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        /* モバイルタブ見切れ修正：折り返しと中央寄せを許可 */
         .nav-container {
             display: flex;
             flex-wrap: wrap;
@@ -88,7 +87,6 @@
         .timeline-hour { width: 50px; font-size: 11px; font-weight: bold; color: var(--main-pink); text-align: center; border-right: 2px solid var(--soft-pink); flex-shrink: 0; }
         .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
 
-        /* フォームのモバイル調整 */
         #formArea { max-width: 100%; overflow: hidden; }
         @media (max-width: 768px) {
             #scheduleForm { grid-template-columns: 1fr; }
@@ -321,11 +319,12 @@
             const today = getJSTToday(0);
             const myDoneUrls = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             
+            // 重要：ここでシートから取得した全データから「おはV」かつ「未評価」を抽出
             ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !myDoneUrls.includes(i.url)).reverse();
             currentCardIndex = 0;
 
             if(ohvQueue.length === 0) {
-                stack.innerHTML = `<div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200"><p class="text-3xl mb-2">☁️</p><p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p><p class="text-[10px] text-gray-400 mt-1">みんなでVを応援しよう！✨</p></div>`;
+                stack.innerHTML = `<div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200"><p class="text-3xl mb-2">☁️</p><p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p></div>`;
                 updateTray(); return;
             }
 
@@ -361,6 +360,7 @@
         function filterZukan(tag) { currentFilter = tag; renderFilterButtons(); renderZukan(); }
         function renderFilterButtons() {
             const bar = document.getElementById('filterBar');
+            if(!bar) return;
             bar.innerHTML = `<button class="nav-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="filterZukan('all')">全員</button>`;
             ALL_TAGS.forEach(tag => { bar.innerHTML += `<button class="nav-btn ${currentFilter === tag ? 'active' : ''}" onclick="filterZukan('${tag}')">${tag}</button>`; });
         }
@@ -388,7 +388,6 @@
         
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
-            // 物理的なガード：対象が「おはV」ではない場合は何もしない
             if (target && target.type === "おはV") {
                 const sendData = { 
                     action: "rate", 
@@ -436,8 +435,9 @@
             const m = document.getElementById('month'), d = document.getElementById('day');
             for(let i=1;i<=12;i++) m.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
             for(let i=1;i<=31;i++) d.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
-            const today = getJSTToday(0).split('-');
-            m.value = today[1]; d.value = today[2];
+            const todayArr = getJSTToday(0).split('-');
+            m.value = todayArr[1]; d.value = todayArr[2];
+            
             const ds = document.getElementById('dateSelector');
             ["今日","明日","明後日"].forEach((l,i)=>{
                 const b = document.createElement('button');
