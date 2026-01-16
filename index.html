@@ -3,18 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>皆で作るV図鑑！Vtuberタイムライン - 声や雰囲気で推しが見つかる</title>
-    <meta name="description" content="リスナーの評価で作り上げるVTuber属性図鑑。カワボ・ハスキーなど声のタイプで推しを検索！">
+    <title>皆で作るV図鑑！Vtuberタイムライン</title>
+    <meta name="description" content="VTuberの配信スケジュールと、みんなの評価で作る属性図鑑。声や雰囲気で推しを見つけよう！">
     
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "皆で作るV図鑑！Vtuberタイムライン",
-      "url": "https://your-site-url.com/"
-    }
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     
@@ -23,25 +14,31 @@
         .nav-btn { padding: 6px 14px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.75rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
         
-        /* 配信一覧のカード：詰まり感を解消 */
-        .stream-card { background: white; border-radius: 20px; border: 1px solid #ffdeeb; height: 420px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 12px rgba(255,183,197,0.1); }
-        .stream-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; background: #fafafa; position: relative; }
-        .stream-iframe-wrap iframe { width: 100%; height: 500px; transform: scale(0.78); transform-origin: top center; border: none; }
+        /* 配信一覧のカード：1画面に収まりやすくスリム化 */
+        .stream-card { background: white; border-radius: 20px; border: 1px solid #ffdeeb; height: 380px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 10px rgba(255,183,197,0.1); }
+        .stream-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; background: #fafafa; }
+        .stream-iframe-wrap iframe { width: 100%; height: 500px; transform: scale(0.72); transform-origin: top center; border: none; }
 
-        /* 今日のおはV：スワイプ */
-        #ohvStack { position: relative; height: 460px; width: 100%; max-width: 360px; margin: 0 auto; }
+        /* 今日のおはV：スタック */
+        #ohvStack { position: relative; height: 440px; width: 100%; max-width: 340px; margin: 0 auto; }
         .swipe-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); border: 1px solid #ffdeeb; transition: transform 0.5s, opacity 0.5s; overflow: hidden; }
         .iframe-wrap { width: 100%; height: 100%; pointer-events: none; }
-        .iframe-wrap iframe { width: 100%; height: 600px; transform: scale(0.8); transform-origin: top center; border: none; }
+        .iframe-wrap iframe { width: 100%; height: 550px; transform: scale(0.75); transform-origin: top center; border: none; }
+        .card-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
 
-        /* V図鑑カード */
-        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 380px; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; }
-        .zukan-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
-        .zukan-iframe-wrap iframe { width: 100%; height: 450px; transform: scale(0.7); transform-origin: top center; border: none; }
-
-        #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 3px solid #ffb7c5; padding: 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); border-radius: 20px 20px 0 0; }
+        /* 評価トレイ */
+        #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 3px solid #ffb7c5; padding: 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; border-radius: 20px 20px 0 0; }
         #tagTray.open { transform: translateY(0); }
         .tag-btn { padding: 10px 4px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; border: 1px solid #eee; text-align: center; cursor: pointer; }
+
+        /* V図鑑カード */
+        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 360px; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; cursor: pointer; }
+        .zukan-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
+        .zukan-iframe-wrap iframe { width: 100%; height: 450px; transform: scale(0.68); transform-origin: top center; border: none; }
+
+        .timeline-row { display: flex; border-bottom: 1px solid #fff0f3; min-height: 40px; align-items: center; }
+        .timeline-hour { width: 50px; font-size: 10px; font-weight: bold; color: #ffb7c5; text-align: center; border-right: 1px solid #fff0f3; }
+        .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px; }
 
         .hidden { display: none; }
         .swiped-left { transform: translateX(-150%) rotate(-20deg); opacity: 0; }
@@ -52,7 +49,7 @@
 <body>
 
     <div class="max-w-6xl mx-auto p-3">
-        <header class="text-center mb-6">
+        <header class="text-center mb-4">
             <h1 class="text-xl font-bold text-[#ff85a2] mb-4">🎀 皆で作るV図鑑！Vtuberタイムライン 🎀</h1>
             <nav class="flex justify-center gap-1 flex-wrap">
                 <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</button>
@@ -62,33 +59,33 @@
             </nav>
         </header>
 
-        <section id="formArea" class="bg-white/50 p-4 rounded-2xl mb-6 border border-pink-100 hidden">
+        <section id="formArea" class="bg-white/70 p-4 rounded-2xl mb-4 border border-pink-100 hidden">
             <div id="formStream" class="hidden">
                 <p class="font-bold text-[#ff85a2] mb-2 text-[10px]">📺 配信スケジュール登録</p>
                 <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-6 gap-2">
                     <div class="flex"><select id="month" class="w-full text-xs"></select><select id="day" class="w-full text-xs"></select></div>
                     <input type="time" id="startTime" class="text-xs" required>
-                    <select id="genre" class="text-xs"><option>💬 雑談</option><option>🎮 ゲーム</option><option>🎤 歌枠</option></select>
-                    <input type="url" id="tweetUrl" placeholder="告知ポストURL" class="col-span-1 md:col-span-2 text-xs border border-pink-100 p-1 rounded">
+                    <select id="genre" class="text-xs"><option>💬 雑談</option><option>🎮 ゲーム</option><option>🎤 歌枠</option><option>💡 その他</option></select>
+                    <input type="url" id="tweetUrl" placeholder="告知ポストURL" class="col-span-1 md:col-span-2 text-xs border p-1 rounded">
                     <button type="submit" class="bg-[#ffb7c5] text-white font-bold rounded-lg text-[10px] py-1">登録</button>
                 </form>
             </div>
             <div id="formOhv" class="hidden">
-                <p class="font-bold text-orange-400 mb-2 text-[10px]">☀️ 今日のおはVを登録（図鑑の元データになります）</p>
+                <p class="font-bold text-orange-400 mb-2 text-[10px]">☀️ 今日のおはVを登録して図鑑を広げよう</p>
                 <form id="ohvForm" class="flex gap-2">
-                    <input type="url" id="ohvUrl" placeholder="おはVポストURLをペースト" class="flex-1 text-xs border border-pink-100 p-2 rounded" required>
-                    <button type="submit" class="bg-orange-400 text-white font-bold px-6 rounded-lg text-[10px]">図鑑に追加</button>
+                    <input type="url" id="ohvUrl" placeholder="おはVポストURLをペースト" class="flex-1 text-xs border p-2 rounded" required>
+                    <button type="submit" class="bg-orange-400 text-white font-bold px-6 rounded-lg text-[10px]">追加</button>
                 </form>
             </div>
         </section>
 
-        <main id="viewMain" class="space-y-4">
-            <div id="timeNav" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
-            <div id="streamList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        <main id="viewMain">
+            <div id="timeNav" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-2"></div>
+            <div id="streamList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </main>
 
         <section id="viewTimeline" class="hidden">
-            <div class="bg-white rounded-2xl p-4 border border-pink-100 shadow-sm">
+            <div class="bg-white rounded-2xl p-4 border border-pink-50 shadow-sm">
                 <div id="dateSelector" class="flex justify-center gap-2 mb-4"></div>
                 <div id="calendarContainer"></div>
             </div>
@@ -96,17 +93,19 @@
 
         <section id="viewOhv" class="hidden flex flex-col items-center">
             <div class="text-center mb-4">
-                <h2 class="text-sm font-bold text-gray-600">評価を選んでV図鑑を完成させよう！</h2>
-                <p class="text-[10px] text-gray-400">画像タップでXへ遷移します</p>
+                <h2 class="text-sm font-bold text-gray-600">皆でV図鑑を作ろう！評価を選択してね！</h2>
+                <p class="text-[10px] text-gray-400">画像タップでXへ声をチェックしにいこう！</p>
             </div>
             <div id="ohvStack"></div>
         </section>
 
         <section id="viewZukan" class="hidden">
-            <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-2" id="zukanFilterBar">
+            <div class="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1" id="filterBar">
                 <button class="nav-btn active" onclick="filterZukan('all')">すべて</button>
                 <button class="nav-btn" onclick="filterZukan('カワボ')">カワボ</button>
+                <button class="nav-btn" onclick="filterZukan('イケボ')">イケボ</button>
                 <button class="nav-btn" onclick="filterZukan('ハスキー')">ハスキー</button>
+                <button class="nav-btn" onclick="filterZukan('お姉さん')">お姉さん</button>
                 <button class="nav-btn" onclick="filterZukan('アットホーム')">アットホーム</button>
             </div>
             <div id="zukanList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
@@ -139,11 +138,42 @@
     </div>
 
     <script>
-        const GAS_URL = "YOUR_GAS_WEB_APP_URL"; // GASのURLをここに
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec";
         let allSchedules = [];
         let currentCardIndex = 0;
         let selectedVoice = "";
         let currentFilter = 'all';
+
+        function getJSTDateStr(offset = 0) {
+            const d = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
+            d.setDate(d.getDate() + offset);
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        let selectedTimelineDate = getJSTDateStr(0);
+
+        window.onload = () => {
+            const mSel = document.getElementById('month');
+            const dSel = document.getElementById('day');
+            for(let i=1; i<=12; i++) mSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
+            for(let i=1; i<=31; i++) dSel.innerHTML += `<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
+            const today = getJSTDateStr(0).split('-');
+            mSel.value = today[1]; dSel.value = today[2];
+            setupDateSelector();
+            fetchData();
+        };
+
+        function setupDateSelector() {
+            const ds = document.getElementById('dateSelector');
+            ds.innerHTML = '';
+            ["今日", "明日", "明後日"].forEach((label, i) => {
+                const dateStr = getJSTDateStr(i);
+                const btn = document.createElement('button');
+                btn.className = `nav-btn ${dateStr === selectedTimelineDate ? 'active' : ''}`;
+                btn.innerText = label;
+                btn.onclick = () => { selectedTimelineDate = dateStr; setupDateSelector(); renderAll(); };
+                ds.appendChild(btn);
+            });
+        }
 
         async function fetchData() {
             try {
@@ -170,34 +200,71 @@
                 const h = parseInt(item.time.split(':')[0]);
                 if(h !== lastH) {
                     const sid = `sec-${h}`;
-                    nav.innerHTML += `<button class="bg-white border border-pink-200 px-3 py-1 rounded-full text-[10px] text-[#ff85a2] shrink-0" onclick="document.getElementById('${sid}').scrollIntoView({behavior:'smooth'})">${h}:00</button>`;
-                    list.innerHTML += `<div id="${sid}" class="col-span-full font-bold text-[#ff85a2] text-xs border-l-4 border-pink-200 pl-2 mt-4">${h}:00〜</div>`;
+                    nav.innerHTML += `<button class="bg-white border border-pink-100 px-3 py-1 rounded-full text-[10px] text-[#ff85a2] shrink-0" onclick="document.getElementById('${sid}').scrollIntoView({behavior:'smooth'})">${h}:00</button>`;
+                    list.innerHTML += `<div id="${sid}" class="col-span-full font-bold text-[#ff85a2] text-[10px] border-l-4 border-pink-200 pl-2 mt-2">${h}:00〜</div>`;
                     lastH = h;
                 }
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 list.innerHTML += `<div class="stream-card">
                     <div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
-                    <a href="${item.url}" target="_blank" class="py-2 bg-sky-400 text-white text-center font-bold text-[10px]">Xで応援する</a>
+                    <a href="${item.url}" target="_blank" class="py-2 bg-[#1da1f2] text-white text-center font-bold text-[10px]">Xで直接応援する</a>
                 </div>`;
             });
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('calendarContainer');
+            container.innerHTML = "";
+            const boxes = {};
+            for (let i = 0; i < 24; i++) {
+                const row = document.createElement('div');
+                row.className = 'timeline-row';
+                row.innerHTML = `<div class="timeline-hour">${i}:00</div><div id="box-${i}" class="timeline-slot"></div>`;
+                container.appendChild(row);
+                boxes[i] = row.querySelector(`#box-${i}`);
+            }
+            allSchedules.filter(i => i.type === "配信" && i.date === selectedTimelineDate).forEach(item => {
+                const h = parseInt(item.time.split(':')[0]);
+                if(boxes[h]) {
+                    const b = document.createElement('button');
+                    b.className = "text-[9px] border border-[#ffb7c5] text-[#ff85a2] px-2 py-0.5 rounded-full font-bold bg-white";
+                    b.innerText = item.time;
+                    b.onclick = () => window.open(item.url, '_blank');
+                    boxes[h].appendChild(b);
+                }
+            });
+        }
+
+        function renderStack() {
+            const stack = document.getElementById('ohvStack');
+            stack.innerHTML = "";
+            const ohvs = allSchedules.filter(i => i.type === "おはV").reverse();
+            ohvs.forEach((item, idx) => {
+                const tid = item.url.split('/status/')[1]?.split('?')[0];
+                const card = document.createElement('div');
+                card.className = "swipe-card";
+                card.style.zIndex = 100 - idx;
+                card.innerHTML = `<div class="iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
+                                  <div class="card-cover" onclick="window.open('${item.url}', '_blank')"></div>`;
+                stack.appendChild(card);
+            });
+            updateTray();
         }
 
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
-            // 重要：評価（voice または atm）があるものだけを表示
-            const ratedOhvs = allSchedules.filter(i => i.type === "おはV" && (i.voice || i.atm));
-            
-            const filtered = currentFilter === 'all' ? ratedOhvs : ratedOhvs.filter(i => i.voice === currentFilter || i.atm === currentFilter);
+            const rated = allSchedules.filter(i => i.type === "おはV" && (i.voice || i.atm));
+            const filtered = currentFilter === 'all' ? rated : rated.filter(i => i.voice === currentFilter || i.atm === currentFilter);
 
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 list.innerHTML += `<div class="zukan-card" onclick="window.open('${item.url}', '_blank')">
                     <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
-                    <div class="p-3 bg-white border-t border-pink-50">
+                    <div class="p-3 border-t border-pink-50 bg-white">
                         <div class="flex flex-wrap gap-1">
-                           <span class="bg-pink-50 text-[#ff85a2] px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.voice}</span>
-                           <span class="bg-blue-50 text-blue-400 px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.atm}</span>
+                           ${item.voice ? `<span class="bg-pink-50 text-[#ff85a2] px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.voice}</span>` : ''}
+                           ${item.atm ? `<span class="bg-blue-50 text-blue-400 px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.atm}</span>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -206,47 +273,65 @@
 
         function filterZukan(tag) {
             currentFilter = tag;
-            const btns = document.querySelectorAll('#zukanFilterBar .nav-btn');
-            btns.forEach(b => b.classList.toggle('active', b.innerText === tag || (tag === 'all' && b.innerText === 'すべて')));
+            document.querySelectorAll('#filterBar .nav-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText === tag || (tag === 'all' && b.innerText === 'すべて'));
+            });
             renderZukan();
         }
 
-        // --- 評価ロジック ---
         function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
         function cancelAuth() { resetTray(); nextCard(true); }
-        async function completeAuth(atm) {
+        async function completeAuth(a) { 
             const ohvs = allSchedules.filter(i => i.type === "おはV").reverse();
             const target = ohvs[currentCardIndex];
-            
-            // 重要：ここでGASに評価データを送信する
-            const postData = {
-                action: "rate",
-                url: target.url,
-                voice: selectedVoice,
-                atm: atm
-            };
-            
-            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(postData) });
-            
-            resetTray(); 
-            nextCard(false);
-            fetchData(); // データを再取得して図鑑を更新
+            await fetch(GAS_URL, { 
+                method: "POST", 
+                mode: "no-cors", 
+                body: JSON.stringify({ action: "rate", url: target.url, voice: selectedVoice, atm: a }) 
+            });
+            resetTray(); nextCard(false); fetchData();
         }
-
-        // --- 以下、既存のタブ切り替え等のロジック ---
+        function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
+        function nextCard(skip) {
+            const cards = document.querySelectorAll('.swipe-card');
+            if(cards[currentCardIndex]) {
+                cards[currentCardIndex].classList.add(skip ? 'swiped-left' : 'swiped-right');
+                currentCardIndex++;
+                updateTray();
+            }
+        }
+        function updateTray() {
+            const tray = document.getElementById('tagTray');
+            const stack = document.querySelectorAll('.swipe-card').length;
+            if(!document.getElementById('viewOhv').classList.contains('hidden') && currentCardIndex < stack) {
+                tray.classList.add('open');
+            } else {
+                tray.classList.remove('open');
+            }
+        }
         function switchTab(t) {
             ['viewMain','viewTimeline','viewOhv','viewZukan'].forEach(v => document.getElementById(v).classList.add('hidden'));
             document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('hidden');
             document.getElementById('formArea').classList.toggle('hidden', (t !== 'timeline' && t !== 'ohv'));
             document.getElementById('formStream').classList.toggle('hidden', t !== 'timeline');
             document.getElementById('formOhv').classList.toggle('hidden', t !== 'ohv');
-            document.querySelectorAll('header .nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('nav .nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
             updateTray();
         }
-
-        // (他の関数：renderTimeline, renderStack, updateTray, submitData 等は以前のものを維持)
-        // 省略していますが、配布時には全結合した状態で出します。
+        async function submitData(d) {
+            await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
+            alert("登録完了！"); fetchData();
+        }
+        document.getElementById('scheduleForm').onsubmit = (e) => {
+            e.preventDefault();
+            submitData({ date: `2026-${document.getElementById('month').value}-${document.getElementById('day').value}`, time: document.getElementById('startTime').value, genre: document.getElementById('genre').value, url: document.getElementById('tweetUrl').value, type: "配信" });
+        };
+        document.getElementById('ohvForm').onsubmit = (e) => {
+            e.preventDefault();
+            submitData({ date: getJSTDateStr(0), url: document.getElementById('ohvUrl').value, type: "おはV" });
+            document.getElementById('ohvUrl').value = "";
+        };
     </script>
 </body>
 </html>
