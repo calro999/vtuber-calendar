@@ -1,45 +1,32 @@
 <!DOCTYPE html>
-<html lang="ja" prefix="og: http://ogp.me/ns#">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>皆で作るV図鑑！Vtuberタイムライン</title>
-    <meta name="description" content="VTuberの配信スケジュールと、みんなの評価で作る属性図鑑。声や雰囲気で推しを見つけよう！">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
-    
     <style>
         body { font-family: 'M PLUS Rounded 1c', sans-serif; background-color: #fff5f7; overflow-x: hidden; }
         .nav-btn { padding: 6px 14px; border-radius: 999px; font-weight: bold; transition: 0.3s; background: white; color: #ffb7c5; border: 2px solid #ffb7c5; font-size: 0.75rem; }
         .nav-btn.active { background: #ffb7c5; color: white; }
-        
-        /* 配信一覧のカード：1画面に収まりやすくスリム化 */
         .stream-card { background: white; border-radius: 20px; border: 1px solid #ffdeeb; height: 380px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 10px rgba(255,183,197,0.1); }
         .stream-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; background: #fafafa; }
         .stream-iframe-wrap iframe { width: 100%; height: 500px; transform: scale(0.72); transform-origin: top center; border: none; }
-
-        /* 今日のおはV：スタック */
         #ohvStack { position: relative; height: 440px; width: 100%; max-width: 340px; margin: 0 auto; }
         .swipe-card { position: absolute; width: 100%; height: 100%; background: white; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); border: 1px solid #ffdeeb; transition: transform 0.5s, opacity 0.5s; overflow: hidden; }
         .iframe-wrap { width: 100%; height: 100%; pointer-events: none; }
         .iframe-wrap iframe { width: 100%; height: 550px; transform: scale(0.75); transform-origin: top center; border: none; }
         .card-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
-
-        /* 評価トレイ */
         #tagTray { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 3px solid #ffb7c5; padding: 12px; z-index: 100; transform: translateY(100%); transition: 0.3s; border-radius: 20px 20px 0 0; }
         #tagTray.open { transform: translateY(0); }
         .tag-btn { padding: 10px 4px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; border: 1px solid #eee; text-align: center; cursor: pointer; }
-
-        /* V図鑑カード */
-        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 360px; display: flex; flex-direction: column; overflow: hidden; transition: 0.2s; cursor: pointer; }
+        .zukan-card { background: white; border-radius: 16px; border: 1px solid #ffdeeb; height: 360px; display: flex; flex-direction: column; overflow: hidden; cursor: pointer; }
         .zukan-iframe-wrap { flex: 1; overflow: hidden; pointer-events: none; }
         .zukan-iframe-wrap iframe { width: 100%; height: 450px; transform: scale(0.68); transform-origin: top center; border: none; }
-
         .timeline-row { display: flex; border-bottom: 1px solid #fff0f3; min-height: 40px; align-items: center; }
         .timeline-hour { width: 50px; font-size: 10px; font-weight: bold; color: #ffb7c5; text-align: center; border-right: 1px solid #fff0f3; }
         .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 8px; }
-
         .hidden { display: none; }
         .swiped-left { transform: translateX(-150%) rotate(-20deg); opacity: 0; }
         .swiped-right { transform: translateX(150%) rotate(20deg); opacity: 0; }
@@ -47,7 +34,6 @@
     </style>
 </head>
 <body>
-
     <div class="max-w-6xl mx-auto p-3">
         <header class="text-center mb-4">
             <h1 class="text-xl font-bold text-[#ff85a2] mb-4">🎀 皆で作るV図鑑！Vtuberタイムライン 🎀</h1>
@@ -94,7 +80,7 @@
         <section id="viewOhv" class="hidden flex flex-col items-center">
             <div class="text-center mb-4">
                 <h2 class="text-sm font-bold text-gray-600">皆でV図鑑を作ろう！評価を選択してね！</h2>
-                <p class="text-[10px] text-gray-400">画像タップでXへ声をチェックしにいこう！</p>
+                <p class="text-[10px] text-gray-400">画像タップでXへ声をチェック！</p>
             </div>
             <div id="ohvStack"></div>
         </section>
@@ -138,7 +124,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec";
+        const GAS_URL = "ここに新しくデプロイしたURLを貼る";
         let allSchedules = [];
         let currentCardIndex = 0;
         let selectedVoice = "";
@@ -164,6 +150,7 @@
 
         function setupDateSelector() {
             const ds = document.getElementById('dateSelector');
+            if(!ds) return;
             ds.innerHTML = '';
             ["今日", "明日", "明後日"].forEach((label, i) => {
                 const dateStr = getJSTDateStr(i);
@@ -177,10 +164,16 @@
 
         async function fetchData() {
             try {
-                const res = await fetch(GAS_URL);
-                allSchedules = await res.json();
+                // キャッシュ回避のためにタイムスタンプを付与
+                const response = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
+                const data = await response.json();
+                console.log("取得データ:", data);
+                allSchedules = data;
                 renderAll();
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error("データ取得エラー:", e);
+                // もしURLが間違っていたりデプロイ設定が違うとここでエラーが出ます
+            }
         }
 
         function renderAll() {
@@ -193,8 +186,9 @@
         function renderStreams() {
             const list = document.getElementById('streamList');
             const nav = document.getElementById('timeNav');
+            if(!list || !nav) return;
             list.innerHTML = ""; nav.innerHTML = "";
-            const streams = allSchedules.filter(i => i.type === "配信").sort((a,b) => (a.time).localeCompare(b.time));
+            const streams = allSchedules.filter(i => i.type === "配信").sort((a,b) => (a.time || "").localeCompare(b.time || ""));
             let lastH = -1;
             streams.forEach(item => {
                 const h = parseInt(item.time.split(':')[0]);
@@ -214,6 +208,7 @@
 
         function renderTimeline() {
             const container = document.getElementById('calendarContainer');
+            if(!container) return;
             container.innerHTML = "";
             const boxes = {};
             for (let i = 0; i < 24; i++) {
@@ -237,8 +232,10 @@
 
         function renderStack() {
             const stack = document.getElementById('ohvStack');
+            if(!stack) return;
             stack.innerHTML = "";
-            const ohvs = allSchedules.filter(i => i.type === "おはV").reverse();
+            currentCardIndex = 0; // 描画時にインデックスをリセット
+            const ohvs = allSchedules.filter(i => i.type === "おはV" && !i.voice).reverse();
             ohvs.forEach((item, idx) => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
@@ -253,6 +250,7 @@
 
         function renderZukan() {
             const list = document.getElementById('zukanList');
+            if(!list) return;
             list.innerHTML = "";
             const rated = allSchedules.filter(i => i.type === "おはV" && (i.voice || i.atm));
             const filtered = currentFilter === 'all' ? rated : rated.filter(i => i.voice === currentFilter || i.atm === currentFilter);
@@ -263,8 +261,8 @@
                     <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div>
                     <div class="p-3 border-t border-pink-50 bg-white">
                         <div class="flex flex-wrap gap-1">
-                           ${item.voice ? `<span class="bg-pink-50 text-[#ff85a2] px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.voice}</span>` : ''}
-                           ${item.atm ? `<span class="bg-blue-50 text-blue-400 px-2 py-0.5 rounded-full text-[9px] font-bold">#${item.atm}</span>` : ''}
+                           ${item.voice ? `<span class="bg-pink-50 text-[#ff85a2] px-2 py-1 rounded-full text-[9px] font-bold">#${item.voice}</span>` : ''}
+                           ${item.atm ? `<span class="bg-blue-50 text-blue-400 px-2 py-1 rounded-full text-[9px] font-bold">#${item.atm}</span>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -282,15 +280,25 @@
         function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
         function cancelAuth() { resetTray(); nextCard(true); }
         async function completeAuth(a) { 
-            const ohvs = allSchedules.filter(i => i.type === "おはV").reverse();
+            const ohvs = allSchedules.filter(i => i.type === "おはV" && !i.voice).reverse();
             const target = ohvs[currentCardIndex];
+            if(!target) return;
+
+            // 送信中は操作できないようにトレイを閉じる
+            document.getElementById('tagTray').classList.remove('open');
+
             await fetch(GAS_URL, { 
                 method: "POST", 
                 mode: "no-cors", 
                 body: JSON.stringify({ action: "rate", url: target.url, voice: selectedVoice, atm: a }) 
             });
-            resetTray(); nextCard(false); fetchData();
+            
+            resetTray(); 
+            nextCard(false); 
+            // 少し待ってから再取得
+            setTimeout(fetchData, 1000);
         }
+
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
         function nextCard(skip) {
             const cards = document.querySelectorAll('.swipe-card');
@@ -302,8 +310,8 @@
         }
         function updateTray() {
             const tray = document.getElementById('tagTray');
-            const stack = document.querySelectorAll('.swipe-card').length;
-            if(!document.getElementById('viewOhv').classList.contains('hidden') && currentCardIndex < stack) {
+            const stack = document.querySelectorAll('.swipe-card:not(.swiped-left):not(.swiped-right)').length;
+            if(!document.getElementById('viewOhv').classList.contains('hidden') && stack > 0) {
                 tray.classList.add('open');
             } else {
                 tray.classList.remove('open');
@@ -321,7 +329,8 @@
         }
         async function submitData(d) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
-            alert("登録完了！"); fetchData();
+            alert("登録しました！1〜2秒後に反映されます。");
+            setTimeout(fetchData, 1500);
         }
         document.getElementById('scheduleForm').onsubmit = (e) => {
             e.preventDefault();
