@@ -27,7 +27,7 @@
       "@context": "https://schema.org",
       "@type": "ItemList",
       "name": "VTuber配信スケジュール",
-      "description": "VTuber의 오늘의 방송 예정 목록"
+      "description": "VTuberの今日の配信予定リスト"
     }
     </script>
 
@@ -182,7 +182,7 @@
 
     <div id="tagTray">
         <div id="step1">
-            <p class="text-center font-bold text-[#ff85a2] text-xs mb-3">どんな声？ 🎀（スキップは不明へ）</p>
+            <p class="text-center font-bold text-[#ff85a2] text-xs mb-3">どんな声？ 🎀</p>
             <div class="grid grid-cols-3 gap-2">
                 <button class="tag-btn" onclick="chooseStep1('カワボ')">カワボ</button>
                 <button class="tag-btn" onclick="chooseStep1('イケボ')">イケボ</button>
@@ -190,6 +190,7 @@
                 <button class="tag-btn" onclick="chooseStep1('お姉さん')">お姉さん</button>
                 <button class="tag-btn" onclick="chooseStep1('ハスキー')">ハスキー</button>
                 <button class="tag-btn" onclick="chooseStep1('中性的')">中性的</button>
+                <button class="tag-btn bg-gray-100 col-span-3 mt-1" onclick="cancelAuth()">評価せずに次を見る (スキップ)</button>
             </div>
         </div>
         <div id="step2" class="hidden">
@@ -200,7 +201,7 @@
                 <button class="tag-btn" onclick="completeAuth('落ち着いた')">落ち着いた</button>
                 <button class="tag-btn" onclick="completeAuth('賑やか')">賑やか</button>
                 <button class="tag-btn" onclick="completeAuth('ギャップ')">ギャップ</button>
-                <button class="tag-btn bg-gray-100" onclick="cancelAuth()">スキップ</button>
+                <button class="tag-btn bg-gray-100" onclick="resetTray()">戻る</button>
             </div>
         </div>
     </div>
@@ -318,9 +319,12 @@
         function renderStack() {
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = ""; currentCardIndex = 0;
-            const ohvs = allData.filter(i => i.type === "おはV").reverse();
+            const today = getJSTToday(0);
+            // 登録日が今日（today）と一致するものだけをスタックに表示
+            const ohvs = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today).reverse();
+            
             if(ohvs.length === 0) {
-                stack.innerHTML = "<p class='text-center py-20 text-gray-400 text-xs'>評価待ちのポストはありません ✨</p>";
+                stack.innerHTML = "<p class='text-center py-20 text-gray-400 text-xs'>本日のおはVはまだありません ✨</p>";
                 return;
             }
             ohvs.forEach((item, idx) => {
@@ -390,7 +394,8 @@
         }
         
         async function completeAuth(atm) {
-            const ohvs = allData.filter(i => i.type === "おはV").reverse();
+            const today = getJSTToday(0);
+            const ohvs = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today).reverse();
             const target = ohvs[currentCardIndex];
             
             if (target) {
@@ -405,12 +410,23 @@
             }
         }
 
-        function cancelAuth() { resetTray(); nextCard(); }
+        // スキップボタン：評価せずに即座にカードをスワイプして次を表示
+        function cancelAuth() { 
+            resetTray(); 
+            nextCard(); 
+        }
+
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
+        
         function nextCard() {
             const cards = document.querySelectorAll('.swipe-card');
-            if(cards[currentCardIndex]) { cards[currentCardIndex].classList.add('swiped-right'); currentCardIndex++; updateTray(); }
-            else { alert("今日のおはVはここまでです！ 🎀"); }
+            if(cards[currentCardIndex]) { 
+                cards[currentCardIndex].classList.add('swiped-right'); 
+                currentCardIndex++; 
+                updateTray(); 
+            } else { 
+                alert("今日のおはVはここまでです！ 🎀"); 
+            }
         }
 
         async function submitData(d) {
