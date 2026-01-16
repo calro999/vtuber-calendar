@@ -3,10 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>皆で作るV図鑑！</title>
+    
+    <title>皆で作るV図鑑！ | 最新VTuber配信スケジュール＆属性検索</title>
+    <meta name="description" content="VTuberの配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
+    <meta name="keywords" content="VTuber, 配信予定, おはV, 予定表, タイムライン, VTuber図鑑, AI検索">
+    
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <meta name="googlebot" content="index, follow">
+    <meta name="google-extended" content="index"> <meta property="og:title" content="皆で作るV図鑑！">
+    <meta property="og:description" content="今日のVTuber配信と個性が一目でわかる！AI検索にも対応。">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    
+    <script type="application/ld+json" id="structuredData">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "VTuber配信スケジュール",
+      "description": "VTuberの今日の配信予定リスト"
+    }
+    </script>
+
     <style>
         :root { --main-pink: #ff85a2; --soft-pink: #fff5f7; }
         body { 
@@ -156,12 +177,27 @@
                 const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 allData = await res.json();
                 localStorage.setItem('v_zukan_cache_v3', JSON.stringify(allData));
+                updateStructuredData(); // AI向けデータを更新
                 renderAll();
-                // 表示速度向上のため、レンダリング後に一度だけ呼び出す
-                if(window.twttr && twttr.widgets) {
-                    twttr.widgets.load();
-                }
+                if(window.twttr && twttr.widgets) twttr.widgets.load();
             } catch (e) { console.error(e); }
+        }
+
+        // AI検索向けにデータを整理してHTMLに埋め込む関数
+        function updateStructuredData() {
+            const streams = allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === getJSTToday(0));
+            const jsonld = {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": "本日のVTuber配信スケジュール",
+                "itemListElement": streams.slice(0, 10).map((s, idx) => ({
+                    "@type": "ListItem",
+                    "position": idx + 1,
+                    "name": s.name,
+                    "description": `${s.time}から${s.genre}配信予定`
+                }))
+            };
+            document.getElementById('structuredData').textContent = JSON.stringify(jsonld);
         }
 
         function renderAll() {
@@ -192,18 +228,17 @@
                 }
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 list.innerHTML += `
-                    <div class="stream-card">
-                        <div class="p-2 text-center font-bold text-sm text-white ${g.class}">${g.emoji} ${item.name || 'VTuber'}</div>
+                    <article class="stream-card">
+                        <h2 class="p-2 text-center font-bold text-sm text-white ${g.class}">${g.emoji} ${item.name || 'VTuber'}</h2>
                         <div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
-                        <a href="${item.url}" target="_blank" class="py-3 text-white text-center font-bold text-xs ${g.class}">Xで見る</a>
-                    </div>`;
+                        <a href="${item.url}" target="_blank" class="py-3 text-white text-center font-bold text-xs ${g.class}">Xで詳しく見る</a>
+                    </article>`;
             });
         }
 
         function renderTimeline() {
             const container = document.getElementById('calendarContainer');
             container.innerHTML = "";
-            // 朝7時からスタートするようにループを調整
             for (let i = 0; i < 24; i++) {
                 const hour = (i + 7) % 24;
                 const row = document.createElement('div');
@@ -254,11 +289,10 @@
 
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
-                const div = document.createElement('div');
+                const div = document.createElement('article');
                 div.className = "zukan-card shadow-sm";
-                // voiceとatmの両方のタグを表示するように修正
                 div.innerHTML = `
-                    <div class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</div>
+                    <h3 class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</h3>
                     <div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div>
                     <div class="p-2 bg-white flex flex-wrap gap-1 border-t">
                         <span class="bg-pink-50 text-pink-600 text-[9px] px-2 py-0.5 rounded-full font-bold">#${item.voice}</span>
@@ -280,8 +314,6 @@
             document.querySelectorAll('nav .nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
             updateTray();
-            
-            // タブ切り替え時にも読み込みを促進
             if(window.twttr && twttr.widgets) twttr.widgets.load();
         }
 
