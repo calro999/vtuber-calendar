@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="logo.png">
 
     <title>皆で作るV図鑑！ | 最新VTuber配信スケジュール＆属性検索</title>
-    <meta name="description" content="VTuber의 配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
+    <meta name="description" content="VTuberの配信予定をAIが読み取りやすい形式で集約。カワボ・イケボなどの属性から推しを探せる参加型VTuber図鑑です。">
     <meta name="keywords" content="VTuber, 配信予定, おはV, 予定表, タイムライン, VTuber図鑑, AI検索">
     
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
@@ -19,7 +19,7 @@
     <meta name="twitter:card" content="summary_large_image">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kiwi+Maru:wght@300;400;500&display=swap" rel="stylesheet">
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     
     <script type="application/ld+json" id="structuredData">
@@ -67,6 +67,30 @@
         .timeline-hour { width: 50px; font-size: 11px; font-weight: bold; color: var(--main-pink); text-align: center; border-right: 2px solid var(--soft-pink); flex-shrink: 0; }
         .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
 
+        /* 案内人プロフィールスタイル */
+        .v-profile-container {
+            background: linear-gradient(135deg, #fff5f8 0%, #ffeef2 100%);
+            border: 4px double #ffb7ce;
+            border-radius: 30px;
+            padding: 25px;
+            max-width: 450px;
+            font-family: 'Kiwi Maru', serif;
+            color: #6d4c4c;
+            box-shadow: 0 10px 25px rgba(255, 183, 206, 0.4);
+            margin: 10px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .v-profile-container::before { content: '🎀'; position: absolute; top: -10px; right: -10px; font-size: 50px; opacity: 0.1; }
+        .v-header { text-align: center; margin-bottom: 20px; }
+        .v-name-ruby { font-size: 0.7em; letter-spacing: 0.3em; color: #ff85a2; display: block; margin-bottom: -5px; }
+        .v-name-main { font-size: 1.8em; font-weight: 500; color: #ff7096; text-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
+        .v-stats-table { width: 100%; background: rgba(255, 255, 255, 0.6); border-radius: 15px; padding: 15px; border-spacing: 0; }
+        .v-stats-table td { padding: 8px 5px; border-bottom: 1px dashed #ffcadb; }
+        .v-stats-label { font-weight: bold; color: #f3a3b9; width: 30%; }
+        .v-quote { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; font-style: italic; position: relative; border-left: 5px solid #ffb7ce; }
+        .v-footer-info { text-align: right; font-size: 0.8em; margin-top: 10px; color: #ffb7ce; }
+
         .hidden { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
@@ -80,6 +104,7 @@
                 <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">タイムライン</button>
                 <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</button>
                 <button id="tabZukan" class="nav-btn" onclick="switchTab('zukan')">皆で作るV図鑑</button>
+                <button id="tabGuide" class="nav-btn" onclick="switchTab('guide')">案内人</button>
             </nav>
         </header>
 
@@ -87,7 +112,7 @@
             <div id="formStream" class="hidden">
                 <form id="scheduleForm" class="grid grid-cols-2 md:grid-cols-7 gap-1.5 text-xs font-bold">
                     <input type="text" id="vName" placeholder="名前" class="p-2 border rounded-lg outline-none">
-                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-l-lg"></select></div>
+                    <div class="flex"><select id="month" class="w-full p-2 border rounded-l-lg"></select><select id="day" class="w-full p-2 border rounded-r-lg"></select></div>
                     <input type="time" id="startTime" class="p-2 border rounded-lg">
                     <select id="genre" class="p-2 border rounded-lg"><option value="雑談">💬 雑談</option><option value="ゲーム">🎮 ゲーム</option><option value="歌枠">🎤 歌枠</option><option value="その他">💡 その他</option></select>
                     <input type="url" id="tweetUrl" placeholder="ポストURL" class="col-span-1 md:col-span-2 p-2 border rounded-lg">
@@ -120,6 +145,28 @@
         <section id="viewZukan" class="hidden">
             <div id="filterBar" class="flex gap-1.5 overflow-x-auto no-scrollbar mb-4"></div>
             <div id="zukanList" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        </section>
+
+        <section id="viewGuide" class="hidden">
+            <div class="v-profile-container">
+                <div class="v-header">
+                    <span class="v-name-ruby">TSUZURI MEMORU</span>
+                    <span class="v-name-main">🎀 綴 メモル 🎀</span>
+                </div>
+                <table class="v-stats-table">
+                    <tr><td class="v-stats-label">種族</td><td>記録の妖精</td></tr>
+                    <tr><td class="v-stats-label">誕生日</td><td>9月4日</td></tr>
+                    <tr><td class="v-stats-label">身長</td><td>145cm</td></tr>
+                    <tr><td class="v-stats-label">性格</td><td>おっとり天然・はなまる主義</td></tr>
+                    <tr><td class="v-stats-label">宝物</td><td>🎀の大きな図鑑</td></tr>
+                </table>
+                <div class="v-quote">
+                    「あなたの軌跡、ぜーんぶ図鑑に書き留めておきますね。だって、とってもキラキラしてるんですもんっ✨」
+                </div>
+                <div class="v-footer-info">
+                    #皆で作るV図鑑 公式ナビゲーター
+                </div>
+            </div>
         </section>
     </div>
 
@@ -308,7 +355,7 @@
         function filterZukan(tag) { currentFilter = tag; renderFilterButtons(); renderZukan(); }
 
         function switchTab(t) {
-            ['viewMain','viewTimeline','viewOhv','viewZukan'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            ['viewMain','viewTimeline','viewOhv','viewZukan','viewGuide'].forEach(v => document.getElementById(v).classList.add('hidden'));
             document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('hidden');
             document.getElementById('formArea').classList.toggle('hidden', (t !== 'timeline' && t !== 'ohv'));
             document.getElementById('formStream').classList.toggle('hidden', t !== 'timeline');
