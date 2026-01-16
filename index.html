@@ -41,7 +41,7 @@
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        /* モバイルナビの改善 */
+        /* モバイルタブ見切れ修正：折り返しと中央寄せを許可 */
         .nav-container {
             display: flex;
             flex-wrap: wrap;
@@ -315,7 +315,6 @@
             });
         }
 
-        // おはVスタックの修正：キー名を統一
         function renderStack() {
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = "";
@@ -380,8 +379,8 @@
 
         function updateTray() {
             const tray = document.getElementById('tagTray');
-            const hasActiveCards = ohvQueue.length > 0 && currentCardIndex < ohvQueue.length;
-            if(!document.getElementById('viewOhv').classList.contains('hidden') && hasActiveCards) tray.classList.add('open');
+            const hasCards = ohvQueue.length > 0 && currentCardIndex < ohvQueue.length;
+            if(!document.getElementById('viewOhv').classList.contains('hidden') && hasCards) tray.classList.add('open');
             else tray.classList.remove('open');
         }
 
@@ -389,13 +388,22 @@
         
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
-            if (target) {
-                const sendData = { action: "rate", url: target.url, name: target.name, date: target.date, voice: selectedVoice, atm: atm, type: "おはV" };
+            // 物理的なガード：対象が「おはV」ではない場合は何もしない
+            if (target && target.type === "おはV") {
+                const sendData = { 
+                    action: "rate", 
+                    url: target.url, 
+                    voice: selectedVoice, 
+                    atm: atm 
+                };
                 markAsDone(target.url);
                 nextCard();
                 resetTray();
                 await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(sendData) });
                 fetchData();
+            } else {
+                nextCard();
+                resetTray();
             }
         }
 
