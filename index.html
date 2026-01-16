@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ja">
-import { Analytics } from "@vercel/analytics/next"
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,6 +24,11 @@ import { Analytics } from "@vercel/analytics/next"
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&family=Kiwi+Maru:wght@300;400;500&display=swap" rel="stylesheet">
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    
+    <script>
+      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
     
     <script type="application/ld+json" id="structuredData">
     {
@@ -106,7 +110,7 @@ import { Analytics } from "@vercel/analytics/next"
         <header class="text-center pt-4 pb-2">
             <h1 class="text-xl font-bold text-[#ff85a2] tracking-tighter drop-shadow-sm">🎀 皆で作るV図鑑！ 🎀</h1>
             <nav class="nav-container">
-                <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配信一覧</button>
+                <button id="tabMain" class="nav-btn active" onclick="switchTab('main')">配���一覧</button>
                 <button id="tabTimeline" class="nav-btn" onclick="switchTab('timeline')">タイムライン</button>
                 <button id="tabOhv" class="nav-btn" onclick="switchTab('ohv')">今日のおはV</button>
                 <button id="tabZukan" class="nav-btn" onclick="switchTab('zukan')">皆で作るV図鑑</button>
