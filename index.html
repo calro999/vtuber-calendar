@@ -13,7 +13,9 @@
     
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
     <meta name="googlebot" content="index, follow">
-    <meta name="google-extended" content="index"> <meta property="og:title" content="皆で作るV図鑑！">
+    <meta name="google-extended" content="index">
+    
+    <meta property="og:title" content="皆で作るV図鑑！">
     <meta property="og:description" content="今日のVTuber配信と個性が一目でわかる！AI検索にも対応。">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
@@ -209,6 +211,7 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw5zrtCgsZDoX3dZ6Dvup_X3Ej2-GNO5Gr8UzLUsTEi8idPnW--1bU4bZ4KcSAMiZcH/exec";
         let allData = [];
+        let ohvQueue = [];
         let currentCardIndex = 0;
         let selectedVoice = "";
         let currentFilter = 'all';
@@ -257,7 +260,8 @@
                     "description": `${s.time}から${s.genre}配信予定`
                 }))
             };
-            document.getElementById('structuredData').textContent = JSON.stringify(jsonld);
+            const script = document.getElementById('structuredData');
+            if(script) script.textContent = JSON.stringify(jsonld);
         }
 
         function renderAll() {
@@ -301,10 +305,7 @@
             container.innerHTML = "";
             for (let i = 0; i < 24; i++) {
                 const hour = (i + 7) % 24;
-                const row = document.createElement('div');
-                row.className = 'timeline-row';
-                row.innerHTML = `<div class="timeline-hour">${hour}:00</div><div id="box-${hour}" class="timeline-slot"></div>`;
-                container.appendChild(row);
+                container.innerHTML += `<div class="timeline-row"><div class="timeline-hour">${hour}:00</div><div id="box-${hour}" class="timeline-slot"></div></div>`;
             }
             allData.filter(i => i.type === "配信" && i.date.replace(/\//g, '-') === selectedTimelineDate).forEach(item => {
                 const h = parseInt(item.time.split(':')[0]);
@@ -318,15 +319,15 @@
 
         function renderStack() {
             const stack = document.getElementById('ohvStack');
-            stack.innerHTML = ""; currentCardIndex = 0;
+            stack.innerHTML = "";
             const today = getJSTToday(0);
-            const ohvs = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today).reverse();
+            const swipedUrls = JSON.parse(sessionStorage.getItem('swiped_urls') || '[]');
             
-            // 全てスワイプ済み、または最初から0件の場合
-            const swipedIndices = JSON.parse(sessionStorage.getItem('swiped_ohvs') || '[]');
-            const activeOhvs = ohvs.filter((_, idx) => !swipedIndices.includes(idx));
+            // 全員に一通り出すために、GASから取得した生のおはVのうち、自分がまだ評価・スキップしてないものを抽出
+            ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !swipedUrls.includes(i.url)).reverse();
+            currentCardIndex = 0;
 
-            if(ohvs.length === 0 || activeOhvs.length === 0) {
+            if(ohvQueue.length === 0) {
                 stack.innerHTML = `
                     <div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200">
                         <p class="text-3xl mb-2">☁️</p>
@@ -337,11 +338,11 @@
                 return;
             }
 
-            ohvs.forEach((item, idx) => {
-                const isSwiped = swipedIndices.includes(idx);
+            ohvQueue.forEach((item, idx) => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
-                card.className = `swipe-card ${isSwiped ? 'swiped-right' : ''}`;
+                card.id = `card-${idx}`;
+                card.className = "swipe-card";
                 card.style.zIndex = 100 - idx;
                 card.innerHTML = `<div class="p-2 text-center font-bold text-xs border-b text-orange-400">☀️ ${item.name || 'VTuber'}</div><div class="stream-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}"></iframe></div><div class="card-cover" onclick="window.open('${item.url}')"></div>`;
                 stack.appendChild(card);
@@ -349,24 +350,12 @@
             updateTray();
         }
 
-        function renderFilterButtons() {
-            const bar = document.getElementById('filterBar');
-            bar.innerHTML = `<button class="nav-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="filterZukan('all')">全員見る</button>`;
-            ALL_TAGS.forEach(tag => { 
-                bar.innerHTML += `<button class="nav-btn ${currentFilter === tag ? 'active' : ''}" onclick="filterZukan('${tag}')">${tag}</button>`; 
-            });
-        }
-
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
+            // 空白除去と文字列判定を強化
             const rated = allData.filter(i => i.voice && String(i.voice).trim() !== "");
             const filtered = currentFilter === 'all' ? rated : rated.filter(i => String(i.voice).includes(currentFilter) || String(i.atm).includes(currentFilter));
-
-            if(filtered.length === 0) {
-                list.innerHTML = "<p class='col-span-full text-center py-10 text-gray-400 text-xs'>まだこのタグの評価はありません ✨</p>";
-                return;
-            }
 
             filtered.forEach(item => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
@@ -385,6 +374,11 @@
         }
 
         function filterZukan(tag) { currentFilter = tag; renderFilterButtons(); renderZukan(); }
+        function renderFilterButtons() {
+            const bar = document.getElementById('filterBar');
+            bar.innerHTML = `<button class="nav-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="filterZukan('all')">全員</button>`;
+            ALL_TAGS.forEach(tag => { bar.innerHTML += `<button class="nav-btn ${currentFilter === tag ? 'active' : ''}" onclick="filterZukan('${tag}')">${tag}</button>`; });
+        }
 
         function switchTab(t) {
             ['viewMain','viewTimeline','viewOhv','viewZukan','viewGuide'].forEach(v => document.getElementById(v).classList.add('hidden'));
@@ -400,56 +394,55 @@
 
         function updateTray() {
             const tray = document.getElementById('tagTray');
-            const visibleCards = document.querySelectorAll('.swipe-card:not(.swiped-right)');
-            if(!document.getElementById('viewOhv').classList.contains('hidden') && visibleCards.length > 0) tray.classList.add('open');
+            const hasActiveCards = ohvQueue.length > 0 && currentCardIndex < ohvQueue.length;
+            if(!document.getElementById('viewOhv').classList.contains('hidden') && hasActiveCards) tray.classList.add('open');
             else tray.classList.remove('open');
         }
 
-        function chooseStep1(v) { 
-            selectedVoice = v; 
-            document.getElementById('step1').classList.add('hidden'); 
-            document.getElementById('step2').classList.remove('hidden'); 
-        }
+        function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
         
         async function completeAuth(atm) {
-            const today = getJSTToday(0);
-            const ohvs = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today).reverse();
-            const target = ohvs[currentCardIndex];
-            
+            const target = ohvQueue[currentCardIndex];
             if (target) {
-                saveSwiped(currentCardIndex);
-                nextCard(); 
+                const sendData = { 
+                    action: "rate", 
+                    url: target.url, 
+                    name: target.name, 
+                    date: target.date,
+                    voice: selectedVoice, 
+                    atm: atm,
+                    type: "評価済"
+                };
+                markAsSwiped(target.url);
+                nextCard();
                 resetTray();
-                await fetch(GAS_URL, { 
-                    method: "POST", 
-                    mode: "no-cors", 
-                    body: JSON.stringify({ action: "rate", url: target.url, voice: selectedVoice, atm: atm }) 
-                });
-                fetchData(); 
+                // 確実に全情報を送信
+                await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(sendData) });
+                fetchData();
             }
         }
 
         function cancelAuth() { 
-            saveSwiped(currentCardIndex);
+            if(ohvQueue[currentCardIndex]) markAsSwiped(ohvQueue[currentCardIndex].url);
             resetTray(); 
             nextCard(); 
         }
 
-        function saveSwiped(idx) {
-            const swiped = JSON.parse(sessionStorage.getItem('swiped_ohvs') || '[]');
-            swiped.push(idx);
-            sessionStorage.setItem('swiped_ohvs', JSON.stringify(swiped));
+        function markAsSwiped(url) {
+            const swiped = JSON.parse(sessionStorage.getItem('swiped_urls') || '[]');
+            if(!swiped.includes(url)) swiped.push(url);
+            sessionStorage.setItem('swiped_urls', JSON.stringify(swiped));
         }
 
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
         
         function nextCard() {
-            const cards = document.querySelectorAll('.swipe-card:not(.swiped-right)');
-            if(cards.length > 0) { 
-                cards[0].classList.add('swiped-right'); 
+            const card = document.getElementById(`card-${currentCardIndex}`);
+            if(card) {
+                card.classList.add('swiped-right');
                 currentCardIndex++;
                 setTimeout(() => {
-                    if(document.querySelectorAll('.swipe-card:not(.swiped-right)').length === 0) renderStack();
+                    if(currentCardIndex >= ohvQueue.length) renderStack();
                     updateTray();
                 }, 400);
             }
