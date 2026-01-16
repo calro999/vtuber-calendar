@@ -41,23 +41,12 @@
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        .nav-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px 4px;
-        }
+        /* デザインパーツ（すべて復元） */
+        .nav-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px 4px; }
         .nav-btn { 
-            padding: 6px 12px; 
-            border-radius: 999px; 
-            font-weight: bold; 
-            transition: 0.2s; 
-            background: white; 
-            color: var(--main-pink); 
-            border: 2px solid var(--main-pink); 
-            font-size: 0.8rem; 
-            white-space: nowrap; 
+            padding: 6px 12px; border-radius: 999px; font-weight: bold; transition: 0.2s; 
+            background: white; color: var(--main-pink); border: 2px solid var(--main-pink); 
+            font-size: 0.8rem; white-space: nowrap; 
         }
         .nav-btn.active { background: var(--main-pink); color: white; box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3); }
         
@@ -87,25 +76,11 @@
         .timeline-hour { width: 50px; font-size: 11px; font-weight: bold; color: var(--main-pink); text-align: center; border-right: 2px solid var(--soft-pink); flex-shrink: 0; }
         .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
 
-        #formArea { max-width: 100%; overflow: hidden; }
-        @media (max-width: 768px) {
-            #scheduleForm { grid-template-columns: 1fr; }
-            #ohvForm { flex-direction: column; }
-            #ohvForm input { width: 100% !important; }
-        }
-
         .v-profile-container {
             background: linear-gradient(135deg, #fff5f8 0%, #ffeef2 100%);
-            border: 4px double #ffb7ce;
-            border-radius: 30px;
-            padding: 25px;
-            max-width: 450px;
-            font-family: 'Kiwi Maru', serif;
-            color: #6d4c4c;
-            box-shadow: 0 10px 25px rgba(255, 183, 206, 0.4);
-            margin: 10px auto;
-            position: relative;
-            overflow: hidden;
+            border: 4px double #ffb7ce; border-radius: 30px; padding: 25px; max-width: 450px;
+            font-family: 'Kiwi Maru', serif; color: #6d4c4c; box-shadow: 0 10px 25px rgba(255, 183, 206, 0.4);
+            margin: 10px auto; position: relative; overflow: hidden;
         }
         .v-header { text-align: center; margin-bottom: 20px; }
         .v-name-ruby { font-size: 0.7em; letter-spacing: 0.3em; color: #ff85a2; display: block; margin-bottom: -5px; }
@@ -115,16 +90,10 @@
         .v-stats-label { font-weight: bold; color: #f3a3b9; width: 30%; }
         .v-quote { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; font-style: italic; position: relative; border-left: 5px solid #ffb7ce; }
         .v-footer-info { text-align: right; font-size: 0.8em; margin-top: 10px; color: #ffb7ce; }
-        
-        .v-guide-image {
-            width: 100%;
-            max-width: 450px;
-            margin: 15px auto;
-            border-radius: 30px;
-            box-shadow: 0 10px 25px rgba(255, 183, 206, 0.3);
-            display: block;
-            border: 2px solid #fff;
-        }
+        .v-guide-image { width: 100%; max-width: 450px; margin: 15px auto; border-radius: 30px; box-shadow: 0 10px 25px rgba(255, 183, 206, 0.3); display: block; border: 2px solid #fff; }
+
+        #formArea { max-width: 100%; overflow: hidden; }
+        @media (max-width: 768px) { #scheduleForm { grid-template-columns: 1fr; } #ohvForm { flex-direction: column; } }
 
         .hidden { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -184,10 +153,7 @@
 
         <section id="viewGuide" class="hidden">
             <div class="v-profile-container">
-                <div class="v-header">
-                    <span class="v-name-ruby">TSUZURI MEMORU</span>
-                    <span class="v-name-main">🎀 綴 メモル 🎀</span>
-                </div>
+                <div class="v-header"><span class="v-name-ruby">TSUZURI MEMORU</span><span class="v-name-main">🎀 綴 メモル 🎀</span></div>
                 <table class="v-stats-table">
                     <tr><td class="v-stats-label">種族</td><td>記録の妖精</td></tr>
                     <tr><td class="v-stats-label">誕生日</td><td>9月4日</td></tr>
@@ -195,12 +161,8 @@
                     <tr><td class="v-stats-label">性格</td><td>おっとり天然・はなまる主義</td></tr>
                     <tr><td class="v-stats-label">宝物</td><td>🎀の大きな図鑑</td></tr>
                 </table>
-                <div class="v-quote">
-                    「あなたの軌跡、ぜーんぶ図鑑に書き留めておきますね。だって、とってもキラキラしてるんですもんっ✨」
-                </div>
-                <div class="v-footer-info">
-                    #皆で作るV図鑑 公式ナビゲーター
-                </div>
+                <div class="v-quote">「あなたの軌跡、ぜーんぶ図鑑に書き留めておきますね。だって、とってもキラキラしてるんですもんっ✨」</div>
+                <div class="v-footer-info">#皆で作るV図鑑 公式ナビゲーター</div>
             </div>
             <img src="memoru.png" alt="綴メモル" class="v-guide-image">
         </section>
@@ -253,26 +215,27 @@
         }
         let selectedTimelineDate = getJSTToday(0);
 
-        function loadCache() {
-            const cache = localStorage.getItem('v_zukan_cache_v3');
-            if (cache) { allData = JSON.parse(cache); renderAll(); }
-        }
-
         async function fetchData() {
             try {
                 const res = await fetch(`${GAS_URL}?t=${Date.now()}`);
                 allData = await res.json();
                 localStorage.setItem('v_zukan_cache_v3', JSON.stringify(allData));
+                updateStructuredData();
                 renderAll();
                 if(window.twttr && twttr.widgets) twttr.widgets.load();
             } catch (e) { console.error(e); }
         }
 
+        function updateStructuredData() {
+            const streams = allData.filter(i => i.type === "配信" && i.date === getJSTToday(0));
+            const jsonld = { "@context": "https://schema.org", "@type": "ItemList", "name": "VTuber配信スケジュール", "itemListElement": streams.slice(0, 10).map((s, idx) => ({ "@type": "ListItem", "position": idx + 1, "name": s.name })) };
+            document.getElementById('structuredData').textContent = JSON.stringify(jsonld);
+        }
+
         function renderAll() { renderStreams(); renderTimeline(); renderStack(); renderZukan(); renderFilterButtons(); }
 
         function renderStreams() {
-            const list = document.getElementById('streamList');
-            const nav = document.getElementById('timeNav');
+            const list = document.getElementById('streamList'), nav = document.getElementById('timeNav');
             list.innerHTML = ""; nav.innerHTML = "";
             const today = getJSTToday(0);
             const streams = allData.filter(i => i.type === "配信" && i.date === today).sort((a,b) => a.time.localeCompare(b.time));
@@ -307,17 +270,27 @@
             });
         }
 
+        /* おはVロジック修正点：判定をタイムラインと同じに */
         function renderStack() {
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = "";
             const today = getJSTToday(0);
             const myDoneUrls = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
-            ohvQueue = allData.filter(i => i.type === "おはV" && String(i.date) === today && !myDoneUrls.includes(i.url)).reverse();
+            
+            // 判定を100%確実にするため文字列型に変換して比較
+            ohvQueue = allData.filter(i => {
+                const isTypeOhv = String(i.type).includes("おはV");
+                const isToday = String(i.date) === today;
+                const isNotDone = !myDoneUrls.includes(i.url);
+                return isTypeOhv && isToday && isNotDone;
+            }).reverse();
+
             currentCardIndex = 0;
             if(ohvQueue.length === 0) {
                 stack.innerHTML = `<div class="text-center px-6 py-10 bg-white/50 rounded-3xl border-2 border-dashed border-pink-200"><p class="text-3xl mb-2">☁️</p><p class="font-bold text-[#ff85a2] text-sm">おはV募集中！</p></div>`;
                 updateTray(); return;
             }
+
             ohvQueue.forEach((item, idx) => {
                 const tid = item.url.split('/status/')[1]?.split('?')[0];
                 const card = document.createElement('div');
@@ -376,23 +349,19 @@
         function chooseStep1(v) { selectedVoice = v; document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); }
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
-            if (target && target.type === "おはV") {
+            if (target) {
                 const sendData = { action: "rate", url: target.url, voice: selectedVoice, atm: atm };
-                markAsDone(target.url);
-                nextCard();
-                resetTray();
+                markAsDone(target.url); nextCard(); resetTray();
                 await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(sendData) });
                 fetchData();
-            } else { nextCard(); resetTray(); }
+            }
         }
-
         function cancelAuth() { if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url); resetTray(); nextCard(); }
         function markAsDone(url) {
             const done = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             if(!done.includes(url)) done.push(url);
             localStorage.setItem('v_zukan_done_urls', JSON.stringify(done));
         }
-
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
         function nextCard() {
             const card = document.getElementById(`card-${currentCardIndex}`);
@@ -402,14 +371,11 @@
                 setTimeout(() => { if(currentCardIndex >= ohvQueue.length) renderStack(); updateTray(); }, 400);
             }
         }
-
         async function submitData(d) {
             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(d) });
             alert("登録しました！"); fetchData();
         }
-
         window.onload = () => {
-            loadCache();
             const m = document.getElementById('month'), d = document.getElementById('day');
             for(let i=1;i<=12;i++) m.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}月</option>`;
             for(let i=1;i<=31;i++) d.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
@@ -419,13 +385,11 @@
             const ds = document.getElementById('dateSelector');
             ["今日","明日","明後日"].forEach((l,i)=>{
                 const b = document.createElement('button');
-                b.className = `nav-btn ${i===0?'active':''}`;
-                b.innerText = l;
+                b.className = `nav-btn ${i===0?'active':''}`; b.innerText = l;
                 b.onclick = (e) => {
                     selectedTimelineDate = getJSTToday(i);
                     document.querySelectorAll('#dateSelector .nav-btn').forEach(btn => btn.classList.remove('active'));
-                    e.target.classList.add('active');
-                    renderTimeline();
+                    e.target.classList.add('active'); renderTimeline();
                 };
                 ds.appendChild(b);
             });
