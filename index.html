@@ -41,7 +41,7 @@
             color: #444; margin: 0; padding: 0; overflow-x: hidden;
         }
 
-        /* モバイルタブ見切れ修正：折り返しと中央寄せを許可 */
+        /* モバイルナビの改善 */
         .nav-container {
             display: flex;
             flex-wrap: wrap;
@@ -87,6 +87,14 @@
         .timeline-row { display: flex; border-bottom: 1px solid #eee; min-height: 50px; align-items: center; }
         .timeline-hour { width: 50px; font-size: 11px; font-weight: bold; color: var(--main-pink); text-align: center; border-right: 2px solid var(--soft-pink); flex-shrink: 0; }
         .timeline-slot { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+
+        /* フォームのモバイル調整 */
+        #formArea { max-width: 100%; overflow: hidden; }
+        @media (max-width: 768px) {
+            #scheduleForm { grid-template-columns: 1fr; }
+            #ohvForm { flex-direction: column; }
+            #ohvForm input { width: 100% !important; }
+        }
 
         .v-profile-container {
             background: linear-gradient(135deg, #fff5f8 0%, #ffeef2 100%);
@@ -307,12 +315,12 @@
             });
         }
 
-        // 全員が評価できるようにローカル端末の履歴を参照
+        // おはVスタックの修正：キー名を統一
         function renderStack() {
             const stack = document.getElementById('ohvStack');
             stack.innerHTML = "";
             const today = getJSTToday(0);
-            const myDoneUrls = JSON.parse(localStorage.getItem('my_evaluated_urls') || '[]');
+            const myDoneUrls = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             
             ohvQueue = allData.filter(i => i.type === "おはV" && i.date.replace(/\//g, '-') === today && !myDoneUrls.includes(i.url)).reverse();
             currentCardIndex = 0;
@@ -334,7 +342,6 @@
             updateTray();
         }
 
-        // 複数タグのカンマ区切り表示に対応
         function renderZukan() {
             const list = document.getElementById('zukanList');
             list.innerHTML = "";
@@ -348,7 +355,6 @@
                 let tags = "";
                 voices.forEach(v => tags += `<span class="bg-pink-50 text-pink-600 text-[8px] px-1.5 py-0.5 rounded-full font-bold">#${v}</span>`);
                 atms.forEach(a => tags += `<span class="bg-blue-50 text-blue-600 text-[8px] px-1.5 py-0.5 rounded-full font-bold">#${a}</span>`);
-
                 list.innerHTML += `<article class="zukan-card shadow-sm cursor-pointer" onclick="window.open('${item.url}')"><h3 class="p-2 text-center font-bold text-xs border-b text-pink-500 truncate">💎 ${item.name || 'VTuber'}</h3><div class="zukan-iframe-wrap"><iframe src="https://platform.twitter.com/embed/Tweet.html?id=${tid}" loading="lazy"></iframe></div><div class="p-2 bg-white flex flex-wrap gap-1 border-t">${tags}</div></article>`;
             });
         }
@@ -384,7 +390,6 @@
         async function completeAuth(atm) {
             const target = ohvQueue[currentCardIndex];
             if (target) {
-                // typeを変更せず、action: "rate" でタグを「追加」する命令を送る
                 const sendData = { action: "rate", url: target.url, name: target.name, date: target.date, voice: selectedVoice, atm: atm, type: "おはV" };
                 markAsDone(target.url);
                 nextCard();
@@ -394,15 +399,12 @@
             }
         }
 
-        function cancelAuth() { 
-            if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url);
-            resetTray(); nextCard(); 
-        }
+        function cancelAuth() { if(ohvQueue[currentCardIndex]) markAsDone(ohvQueue[currentCardIndex].url); resetTray(); nextCard(); }
 
         function markAsDone(url) {
-            const done = JSON.parse(localStorage.getItem('my_evaluated_urls') || '[]');
+            const done = JSON.parse(localStorage.getItem('v_zukan_done_urls') || '[]');
             if(!done.includes(url)) done.push(url);
-            localStorage.setItem('my_evaluated_urls', JSON.stringify(done));
+            localStorage.setItem('v_zukan_done_urls', JSON.stringify(done));
         }
 
         function resetTray() { document.getElementById('step1').classList.remove('hidden'); document.getElementById('step2').classList.add('hidden'); }
@@ -428,7 +430,6 @@
             for(let i=1;i<=31;i++) d.innerHTML+=`<option value="${String(i).padStart(2,'0')}">${i}日</option>`;
             const today = getJSTToday(0).split('-');
             m.value = today[1]; d.value = today[2];
-
             const ds = document.getElementById('dateSelector');
             ["今日","明日","明後日"].forEach((l,i)=>{
                 const b = document.createElement('button');
